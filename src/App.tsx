@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { sceneCss, standaloneCss } from "./sceneStyles";
 
 type Audience = "engineer" | "exec" | "student" | "customer";
 type ExplainerMode = "architecture" | "request" | "risk" | "timeline";
@@ -44,12 +46,16 @@ const audienceCopy: Record<Audience, string> = {
   customer: "Trust view: outcomes, data movement, privacy, and handoff points.",
 };
 
+const audiences = Object.keys(audienceCopy) as Audience[];
+
 const modeLabels: Record<ExplainerMode, string> = {
   architecture: "Everything",
   request: "Create",
   risk: "Review",
   timeline: "Export",
 };
+
+const modes = Object.keys(modeLabels) as ExplainerMode[];
 
 const modeTitles: Record<ExplainerMode, string> = {
   architecture: "System map",
@@ -127,12 +133,8 @@ function extractTerms(source: string) {
     .slice(0, 10);
 }
 
-function fallbackFact(facts: string[], index: number, fallback: string) {
-  return facts[index] ?? fallback;
-}
-
 function blockDetail(facts: string[], index: number, fallback: string) {
-  return truncateText(fallbackFact(facts, index, fallback), 92);
+  return truncateText(facts[index] ?? fallback, 92);
 }
 
 function createScene(source: string, audience: Audience, mode: ExplainerMode): Scene {
@@ -242,26 +244,22 @@ function createScene(source: string, audience: Audience, mode: ExplainerMode): S
     { from: "artifact", to: "planner", label: "revise", modes: ["request", "risk"] },
   ];
 
+  const summaries: Record<ExplainerMode, string> = {
+    architecture: "Focus: show the full source-to-artifact system and its control points.",
+    request: "Focus: follow one create request as it becomes an interactive explainer.",
+    risk: "Focus: expose where the explanation can drift, leak context, or fail visual QA.",
+    timeline: "Focus: move from source intake to an exportable artifact with review gates.",
+  };
+
   return {
     title,
     subtitle: audienceCopy[audience],
-    summary:
-      mode === "risk"
-        ? "Focus: expose where the explanation can drift, leak context, or fail visual QA."
-        : mode === "timeline"
-          ? "Focus: move from source intake to an exportable artifact with review gates."
-          : mode === "request"
-            ? "Focus: follow one create request as it becomes an interactive explainer."
-            : "Focus: show the full source-to-artifact system and its control points.",
+    summary: summaries[mode],
     facts,
     terms,
     blocks,
     edges,
   };
-}
-
-function compactTitle(title: string) {
-  return title.length > 42 ? `${title.slice(0, 39).trim()}...` : title;
 }
 
 function truncateText(value: string, maxLength: number) {
@@ -296,20 +294,6 @@ function wrapText(value: string, maxChars: number, maxLines: number) {
   return lines;
 }
 
-function detailPreview(detail: string, maxLength = 42) {
-  const compact = detail.replace(/\s+/g, " ").trim();
-  return compact.length > maxLength ? `${compact.slice(0, maxLength - 3).trim()}...` : compact;
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
 function blockCenter(block: SceneBlock) {
   return { x: block.x + block.w / 2, y: block.y + block.h / 2 };
 }
@@ -321,30 +305,24 @@ function edgePath(from: SceneBlock, to: SceneBlock) {
   return `M ${start.x} ${start.y} C ${start.x + curve} ${start.y}, ${end.x - curve} ${end.y}, ${end.x} ${end.y}`;
 }
 
-function modeCallout(mode: ExplainerMode) {
-  if (mode === "request") {
-    return {
-      title: "Create flow",
-      body: "The scene is planned from source structure, then rendered into HTML/SVG with editable paths and callouts.",
-    };
-  }
-  if (mode === "risk") {
-    return {
-      title: "Review flow",
-      body: "Grounding and browser QA stay visible so bad assumptions, overflow, and private context do not sneak into the artifact.",
-    };
-  }
-  if (mode === "timeline") {
-    return {
-      title: "Export flow",
-      body: "The approved scene becomes a standalone HTML explainer, JSON scene model, screenshot, or recorded walkthrough.",
-    };
-  }
-  return {
+const modeCallouts: Record<ExplainerMode, { title: string; body: string }> = {
+  architecture: {
     title: "Everything view",
     body: "The product arranges source, orchestration, guardrails, and artifact output into a single inspectable scene.",
-  };
-}
+  },
+  request: {
+    title: "Create flow",
+    body: "The scene is planned from source structure, then rendered into HTML/SVG with editable paths and callouts.",
+  },
+  risk: {
+    title: "Review flow",
+    body: "Grounding and browser QA stay visible so bad assumptions, overflow, and private context do not sneak into the artifact.",
+  },
+  timeline: {
+    title: "Export flow",
+    body: "The approved scene becomes a standalone HTML explainer, JSON scene model, screenshot, or recorded walkthrough.",
+  },
+};
 
 function download(filename: string, content: string, type: string) {
   const blob = new Blob([content], { type });
@@ -356,96 +334,6 @@ function download(filename: string, content: string, type: string) {
   URL.revokeObjectURL(url);
 }
 
-function standaloneHtml(scene: Scene, mode: ExplainerMode) {
-  const facts = scene.facts.map((fact) => `<li>${escapeHtml(fact)}</li>`).join("");
-  const terms = scene.terms.map((term) => `<span>${escapeHtml(term)}</span>`).join("");
-
-  return `<!doctype html>
-<html lang="en">
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${escapeHtml(scene.title)} - Mise en Scene</title>
-<style>
-body{margin:0;background:#050a13;color:#e6eefb;font:15px/1.5 Inter,ui-sans-serif,system-ui,sans-serif}
-main{max-width:1260px;margin:auto;padding:24px}
-h1{font-size:32px;margin:0 0 8px}p{color:#9fb0c7}.scene{border:1px solid #1e304d;border-radius:12px;background:#07111f;overflow:hidden}
-svg{width:100%;height:auto;display:block}.meta{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;margin-top:16px}
-.panel{border:1px solid #1e304d;border-radius:10px;padding:16px;background:#0b1627}span{display:inline-block;border:1px solid #334765;border-radius:999px;padding:4px 9px;margin:3px;color:#c7d7ee}
-@media(max-width:780px){main{padding:14px}.meta{grid-template-columns:1fr}h1{font-size:24px}}
-</style>
-<main>
-<h1>${escapeHtml(scene.title)}</h1>
-<p>${escapeHtml(scene.subtitle)} Mode: ${escapeHtml(modeLabels[mode])}.</p>
-<section class="scene">${svgString(scene, mode)}</section>
-<section class="meta">
-<div class="panel"><h2>Source-grounded facts</h2><ul>${facts || "<li>No source facts extracted yet.</li>"}</ul></div>
-<div class="panel"><h2>Terms</h2>${terms}</div>
-</section>
-</main>
-</html>`;
-}
-
-function svgString(scene: Scene, activeMode: ExplainerMode) {
-  const blockById = new Map(scene.blocks.map((block) => [block.id, block]));
-  const callout = modeCallout(activeMode);
-  const activeEdges = scene.edges.filter((edge) => edge.modes.includes(activeMode));
-  const activeIds = new Set(activeEdges.flatMap((edge) => [edge.from, edge.to]));
-  const canvasTitle = compactTitle(scene.title);
-
-  const allEdges = scene.edges
-    .map((edge) => {
-      const from = blockById.get(edge.from)!;
-      const to = blockById.get(edge.to)!;
-      const active = edge.modes.includes(activeMode);
-      const path = edgePath(from, to);
-      return `<g opacity="${active ? "1" : ".16"}"><path d="${path}" fill="none" stroke="${active ? "#b7c7dc" : "#64748b"}" stroke-width="${active ? "2.6" : "1.4"}" marker-end="url(#arrow)"></path><text><textPath href="#${edge.from}-${edge.to}" startOffset="50%" fill="${active ? "#dbeafe" : "#718096"}" font-size="12" font-weight="700">${escapeHtml(edge.label)}</textPath></text><path id="${edge.from}-${edge.to}" d="${path}" fill="none" stroke="none"></path></g>`;
-    })
-    .join("");
-
-  const blocks = scene.blocks
-    .map((block) => {
-      const colors = zoneColors[block.zone];
-      const active = activeIds.has(block.id) || activeMode === "architecture";
-      const label = truncateText(block.label, Math.max(16, Math.floor((block.w - 32) / 8.4)));
-      const detailLines = wrapText(block.detail, Math.max(18, Math.floor((block.w - 32) / 6.2)), 2);
-      const detail = detailLines
-        .map((line, index) => `<tspan x="${block.x + 16}" dy="${index === 0 ? 0 : 14}">${escapeHtml(line)}</tspan>`)
-        .join("");
-      return `<g opacity="${active ? "1" : ".32"}"><rect x="${block.x}" y="${block.y}" width="${block.w}" height="${block.h}" rx="8" fill="${colors.fill}" stroke="${active ? colors.chip : colors.stroke}" stroke-width="${active ? "1.7" : "1"}"></rect><text x="${block.x + 16}" y="${block.y + 24}" fill="#8b8a82" font-size="10" font-weight="700" letter-spacing=".08em">${escapeHtml(block.kicker)}</text><text x="${block.x + 16}" y="${block.y + 52}" fill="#f1efe7" font-size="15" font-weight="800">${escapeHtml(label)}</text><text x="${block.x + 16}" y="${block.y + 73}" fill="#aaa79a" font-size="11">${detail}</text></g>`;
-    })
-    .join("");
-
-  return `<svg viewBox="0 0 1180 720" role="img" aria-label="${escapeHtml(scene.title)} interactive scene">
-<defs>
-<marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth"><path d="M2,2 L10,6 L2,10 Z" fill="#9fb0c7"></path></marker>
-<linearGradient id="stage-bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0%" stop-color="#09182b"></stop><stop offset="100%" stop-color="#050a13"></stop></linearGradient>
-<filter id="soft"><feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000" flood-opacity=".35"></feDropShadow></filter>
-</defs>
-<rect width="1180" height="720" fill="url(#stage-bg)"></rect>
-<rect x="42" y="124" width="250" height="496" rx="8" fill="#111211" stroke="#34342f" stroke-dasharray="5 5"></rect>
-<rect x="316" y="124" width="502" height="496" rx="8" fill="#141514" stroke="#363832" stroke-dasharray="5 5"></rect>
-<rect x="842" y="124" width="296" height="496" rx="8" fill="#151511" stroke="#3a3931" stroke-dasharray="5 5"></rect>
-<path d="M0 88 H1180 M0 642 H1180" stroke="#24241f" stroke-width="1"></path>
-<rect x="672" y="0" width="506" height="720" fill="#10130e" opacity=".52"></rect>
-<text x="34" y="36" fill="#f1efe7" font-size="24" font-weight="700">${escapeHtml(canvasTitle)}</text>
-<text x="36" y="60" fill="#77766f" font-size="11" font-weight="700" letter-spacing=".14em">${escapeHtml(scene.summary.toUpperCase())}</text>
-<text x="62" y="152" fill="#77766f" font-size="11" font-weight="800" letter-spacing=".12em">SOURCE</text>
-<text x="340" y="152" fill="#77766f" font-size="11" font-weight="800" letter-spacing=".12em">ORCHESTRATION</text>
-<text x="864" y="152" fill="#77766f" font-size="11" font-weight="800" letter-spacing=".12em">ARTIFACT + QA</text>
-${Object.entries(modeLabels)
-  .map(([key, label], index) => {
-    const active = key === activeMode;
-    const x = 682 + index * 108;
-    return `<rect x="${x}" y="22" width="96" height="26" rx="13" fill="${active ? "#e9e5d9" : "#151613"}" stroke="${active ? "#e9e5d9" : "#32332d"}"></rect><text x="${x + 48}" y="39" text-anchor="middle" fill="${active ? "#11120f" : "#918f84"}" font-size="10" font-weight="800">${escapeHtml(label)}</text>`;
-  })
-  .join("")}
-<g filter="url(#soft)">${allEdges}${blocks}</g>
-<rect x="870" y="520" width="238" height="108" rx="8" fill="#181814" stroke="#4b4336"></rect>
-<text x="894" y="552" fill="#f1efe7" font-size="15" font-weight="800">${escapeHtml(callout.title)}</text>
-<foreignObject x="894" y="568" width="184" height="48"><p xmlns="http://www.w3.org/1999/xhtml" style="margin:0;color:#aaa79a;font:12px/1.35 ui-monospace,SFMono-Regular,Menlo,monospace">${escapeHtml(callout.body)}</p></foreignObject>
-</svg>`;
-}
-
 function SceneSvg({
   scene,
   activeMode,
@@ -455,18 +343,19 @@ function SceneSvg({
 }: {
   scene: Scene;
   activeMode: ExplainerMode;
-  selectedId: string;
-  onSelect: (id: string) => void;
-  onModeChange: (mode: ExplainerMode) => void;
+  selectedId?: string;
+  onSelect?: (id: string) => void;
+  onModeChange?: (mode: ExplainerMode) => void;
 }) {
   const blockById = new Map(scene.blocks.map((block) => [block.id, block]));
-  const callout = modeCallout(activeMode);
+  const callout = modeCallouts[activeMode];
   const activeEdges = scene.edges.filter((edge) => edge.modes.includes(activeMode));
   const activeIds = new Set(activeEdges.flatMap((edge) => [edge.from, edge.to]));
-  const canvasTitle = compactTitle(scene.title);
+  const canvasTitle = truncateText(scene.title, 42);
 
   return (
     <svg viewBox="0 0 1180 720" role="img" aria-label={`${scene.title} interactive scene`}>
+      <style>{sceneCss}</style>
       <defs>
         <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
           <path d="M2,2 L10,6 L2,10 Z" fill="#9fb0c7" />
@@ -503,7 +392,7 @@ function SceneSvg({
         ARTIFACT + QA
       </text>
 
-      {(Object.keys(modeLabels) as ExplainerMode[]).map((item, index) => {
+      {modes.map((item, index) => {
         const active = item === activeMode;
         const x = 682 + index * 108;
         return (
@@ -512,9 +401,9 @@ function SceneSvg({
             role="button"
             tabIndex={0}
             className="scene-mode"
-            onClick={() => onModeChange(item)}
+            onClick={() => onModeChange?.(item)}
             onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") onModeChange(item);
+              if (event.key === "Enter" || event.key === " ") onModeChange?.(item);
             }}
           >
             <rect x={x} y="22" width="96" height="26" rx="13" className={active ? "scene-mode-active" : ""} />
@@ -556,9 +445,9 @@ function SceneSvg({
               className={`scene-block ${active ? "active" : ""} ${selected ? "selected" : ""}`}
               role="button"
               tabIndex={0}
-              onClick={() => onSelect(block.id)}
+              onClick={() => onSelect?.(block.id)}
               onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") onSelect(block.id);
+                if (event.key === "Enter" || event.key === " ") onSelect?.(block.id);
               }}
             >
               <rect x={block.x} y={block.y} width={block.w} height={block.h} rx="8" fill={colors.fill} stroke={selected ? "#f4efe5" : active ? colors.chip : colors.stroke} />
@@ -593,10 +482,64 @@ function SceneSvg({
   );
 }
 
+function StandalonePage({ scene, mode }: { scene: Scene; mode: ExplainerMode }) {
+  return (
+    <html lang="en">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{`${scene.title} - Mise en Scene`}</title>
+        <style>{standaloneCss}</style>
+      </head>
+      <body>
+        <main>
+          <h1>{scene.title}</h1>
+          <p>
+            {scene.subtitle} Mode: {modeLabels[mode]}.
+          </p>
+          <section className="scene">
+            <SceneSvg scene={scene} activeMode={mode} />
+          </section>
+          <section className="meta">
+            <div className="panel">
+              <h2>Source-grounded facts</h2>
+              <ul>{scene.facts.length ? scene.facts.map((fact) => <li key={fact}>{fact}</li>) : <li>No source facts extracted yet.</li>}</ul>
+            </div>
+            <div className="panel">
+              <h2>Terms</h2>
+              {scene.terms.map((term) => (
+                <span key={term}>{term}</span>
+              ))}
+            </div>
+          </section>
+        </main>
+      </body>
+    </html>
+  );
+}
+
+function standaloneHtml(scene: Scene, mode: ExplainerMode) {
+  return `<!doctype html>\n${renderToStaticMarkup(<StandalonePage scene={scene} mode={mode} />)}`;
+}
+
+function usePersistentState<T extends string>(key: string, initial: T, allowed?: readonly T[]) {
+  const [value, setValue] = useState<T>(() => {
+    const stored = localStorage.getItem(key) as T | null;
+    if (stored === null) return initial;
+    return !allowed || allowed.includes(stored) ? stored : initial;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(key, value);
+  }, [key, value]);
+
+  return [value, setValue] as const;
+}
+
 export default function App() {
-  const [source, setSource] = useState(() => localStorage.getItem("mise-source") ?? sampleSource);
-  const [audience, setAudience] = useState<Audience>(() => (localStorage.getItem("mise-audience") as Audience) ?? "engineer");
-  const [mode, setMode] = useState<ExplainerMode>(() => (localStorage.getItem("mise-mode") as ExplainerMode) ?? "architecture");
+  const [source, setSource] = usePersistentState<string>("mise-source", sampleSource);
+  const [audience, setAudience] = usePersistentState<Audience>("mise-audience", "engineer", audiences);
+  const [mode, setMode] = usePersistentState<ExplainerMode>("mise-mode", "architecture", modes);
   const [selectedId, setSelectedId] = useState("source");
   const [manualTitle, setManualTitle] = useState("");
   const [exportNotice, setExportNotice] = useState("Ready");
@@ -609,17 +552,6 @@ export default function App() {
   const selected = scene.blocks.find((block) => block.id === selectedId) ?? scene.blocks[0];
   const visibleFacts = scene.facts.slice(0, 3);
   const visibleTerms = scene.terms.slice(0, 7);
-
-  function persist(nextSource = source, nextAudience = audience, nextMode = mode) {
-    localStorage.setItem("mise-source", nextSource);
-    localStorage.setItem("mise-audience", nextAudience);
-    localStorage.setItem("mise-mode", nextMode);
-  }
-
-  function handleModeChange(nextMode: ExplainerMode) {
-    setMode(nextMode);
-    persist(source, audience, nextMode);
-  }
 
   function handleExport(filename: string, content: string, type: string) {
     download(filename, content, type);
@@ -646,13 +578,7 @@ export default function App() {
         <aside className="panel source-panel">
           <div className="panel-head">
             <h2>Source</h2>
-            <button
-              className="small"
-              onClick={() => {
-                setSource(sampleSource);
-                persist(sampleSource);
-              }}
-            >
+            <button className="small" onClick={() => setSource(sampleSource)}>
               Sample
             </button>
           </div>
@@ -662,46 +588,23 @@ export default function App() {
           </label>
           <label>
             Source material
-            <textarea
-              value={source}
-              onChange={(event) => {
-                setSource(event.target.value);
-                persist(event.target.value);
-              }}
-            />
+            <textarea value={source} onChange={(event) => setSource(event.target.value)} />
           </label>
-          <div className="control-grid">
-            <label>
-              Audience
-              <select
-                value={audience}
-                onChange={(event) => {
-                  const next = event.target.value as Audience;
-                  setAudience(next);
-                  persist(source, next, mode);
-                }}
-              >
-                <option value="engineer">Engineer</option>
-                <option value="exec">Executive</option>
-                <option value="student">Student</option>
-                <option value="customer">Customer</option>
-              </select>
-            </label>
-            <label>
-              Export target
-              <select aria-label="Export target" defaultValue="html">
-                <option value="html">Interactive HTML</option>
-                <option value="png">Screenshot pass</option>
-                <option value="webm">Recorded walkthrough</option>
-              </select>
-            </label>
-          </div>
+          <label>
+            Audience
+            <select value={audience} onChange={(event) => setAudience(event.target.value as Audience)}>
+              <option value="engineer">Engineer</option>
+              <option value="exec">Executive</option>
+              <option value="student">Student</option>
+              <option value="customer">Customer</option>
+            </select>
+          </label>
         </aside>
 
         <section className="artifact-workbench">
           <section className="stage-panel">
             <div className="stage">
-              <SceneSvg scene={scene} activeMode={mode} selectedId={selected.id} onSelect={setSelectedId} onModeChange={handleModeChange} />
+              <SceneSvg scene={scene} activeMode={mode} selectedId={selected.id} onSelect={setSelectedId} onModeChange={setMode} />
             </div>
           </section>
 

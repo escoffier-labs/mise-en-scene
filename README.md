@@ -20,6 +20,18 @@ npm run dev
 
 The local dev server defaults to `http://localhost:5215`.
 
+## Code layout
+
+- `src/App.tsx`: scene model, heuristics, the `SceneSvg` component, and the app
+  shell. The standalone HTML export renders the same `SceneSvg` component via
+  `renderToStaticMarkup`, so exports always match the live app.
+- `src/sceneStyles.ts`: styles for the SVG internals (injected inside the SVG)
+  plus page chrome for the exported artifact.
+- `src/index.css`: app shell layout and controls.
+
+Not implemented yet: screenshot and recorded-walkthrough export targets, and
+any real ingestion beyond the local text heuristics.
+
 ## Naming
 
 Use ASCII slugs without accents:

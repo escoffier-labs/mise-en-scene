@@ -211,12 +211,6 @@ textarea:focus {
   outline: none;
 }
 
-.control-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 9px;
-}
-
 .artifact-workbench {
   display: grid;
   grid-template-rows: minmax(0, 1fr) 142px;
@@ -246,168 +240,8 @@ textarea:focus {
   max-height: none;
 }
 
-.stage-wash {
-  fill: #10130e;
-  opacity: 0.52;
-}
-
-.stage-grid {
-  stroke: #24241f;
-  stroke-width: 1;
-}
-
-.zone-frame {
-  fill: rgba(255, 255, 255, 0.012);
-  stroke: #37372f;
-  stroke-dasharray: 5 5;
-  stroke-width: 1;
-}
-
-.scene-title {
-  fill: #f1efe7;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 24px;
-  font-weight: 500;
-}
-
-.scene-summary {
-  fill: #77766f;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.zone-title {
-  fill: #77766f;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-}
-
-.scene-mode {
-  cursor: pointer;
-}
-
-.scene-mode rect {
-  fill: #151613;
-  stroke: #32332d;
-}
-
-.scene-mode .scene-mode-active {
-  fill: #e9e5d9;
-  stroke: #e9e5d9;
-}
-
-.scene-mode-text {
-  fill: #918f84;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.scene-mode-text-active {
-  fill: #11120f;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 10px;
-  font-weight: 900;
-}
-
-.flow {
-  opacity: 0.17;
-}
-
-.flow path:first-child {
-  fill: none;
-  stroke: #77766e;
-  stroke-width: 1.1;
-}
-
-.flow.active {
-  opacity: 1;
-}
-
-.flow.active path:first-child {
-  stroke: #cbc4b4;
-  stroke-width: 1.9;
-}
-
-.flow textPath {
-  fill: #6f6d65;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.flow.active textPath {
-  fill: #d7d0c0;
-}
-
-.scene-block {
-  cursor: pointer;
-  opacity: 0.32;
-}
-
-.scene-block.active,
-.scene-block.selected {
-  opacity: 1;
-}
-
-.scene-block rect:first-child {
-  stroke-width: 1;
-}
-
-.scene-block.active rect:first-child {
-  stroke-width: 1.7;
-}
-
-.scene-block.selected rect:first-child {
-  stroke-width: 2.2;
-}
-
-.block-kicker {
-  fill: #8b8a82;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-
-.block-label {
-  fill: #f1efe7;
-  font-size: 14px;
-  font-weight: 800;
-}
-
-.block-zone {
-  fill: #aaa79a;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 10px;
-}
-
-.callout rect {
-  fill: #181814;
-  stroke: #4b4336;
-}
-
-.callout-title {
-  fill: #f1efe7;
-  font-size: 15px;
-  font-weight: 800;
-}
-
-.callout p {
-  margin: 0;
-  color: #aaa79a;
-  font:
-    12px/1.35 ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Consolas,
-    monospace;
-}
+/* Scene SVG internals are styled by src/sceneStyles.ts, injected inside the
+   SVG so live app and exported artifacts share one stylesheet. */
 
 .detail-rail {
   display: grid;
@@ -532,7 +366,6 @@ textarea:focus {
     width: 100%;
   }
 
-  .control-grid,
   .detail-rail {
     grid-template-columns: 1fr;
   }
