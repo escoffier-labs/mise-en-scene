@@ -4,14 +4,12 @@ import { sceneCss, standaloneCss } from "./sceneStyles";
 
 type Audience = "engineer" | "exec" | "student" | "customer";
 type ExplainerMode = "architecture" | "request" | "risk" | "timeline";
-type Zone = "source" | "orchestration" | "artifact" | "guardrail";
 
 type SceneBlock = {
   id: string;
   label: string;
   kicker: string;
   detail: string;
-  zone: Zone;
   x: number;
   y: number;
   w: number;
@@ -23,6 +21,16 @@ type SceneEdge = {
   to: string;
   label: string;
   modes: Array<ExplainerMode>;
+  dashed?: boolean;
+};
+
+type SceneZone = {
+  label: string;
+  desc: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 };
 
 type Scene = {
@@ -64,12 +72,11 @@ const modeTitles: Record<ExplainerMode, string> = {
   timeline: "Artifact delivery",
 };
 
-const zoneColors: Record<Zone, { fill: string; stroke: string; chip: string }> = {
-  source: { fill: "#171717", stroke: "#3a3a36", chip: "#d8d4c7" },
-  orchestration: { fill: "#191b1a", stroke: "#43433d", chip: "#c6d4c0" },
-  artifact: { fill: "#1c1b18", stroke: "#4a4438", chip: "#e6c99f" },
-  guardrail: { fill: "#1a1917", stroke: "#5a4b43", chip: "#d8a69a" },
-};
+const sceneZones: SceneZone[] = [
+  { label: "SOURCE", desc: "what the explainer is grounded in", x: 48, y: 116, w: 264, h: 500 },
+  { label: "ORCHESTRATION", desc: "planning, routing, and revision", x: 344, y: 116, w: 512, h: 500 },
+  { label: "ARTIFACT + QA", desc: "what ships and what checks it", x: 888, y: 116, w: 344, h: 500 },
+];
 
 function titleFromSource(source: string, mode: ExplainerMode) {
   const firstLine = source
@@ -134,7 +141,7 @@ function extractTerms(source: string) {
 }
 
 function blockDetail(facts: string[], index: number, fallback: string) {
-  return truncateText(facts[index] ?? fallback, 92);
+  return truncateText(facts[index] ?? fallback, 140);
 }
 
 function createScene(source: string, audience: Audience, mode: ExplainerMode): Scene {
@@ -148,43 +155,39 @@ function createScene(source: string, audience: Audience, mode: ExplainerMode): S
       label: "Source material",
       kicker: "INPUT",
       detail: blockDetail(facts, 0, "Repo, OpenAPI spec, README, architecture note, incident report, or pasted context."),
-      zone: "source",
-      x: 88,
-      y: 226,
-      w: 182,
-      h: 86,
+      x: 72,
+      y: 196,
+      w: 216,
+      h: 92,
     },
     {
       id: "extract",
       label: "Ingestion pass",
       kicker: "STRUCTURE",
       detail: blockDetail(facts, 1, "Extract actors, interfaces, systems, data stores, decisions, and flows."),
-      zone: "orchestration",
-      x: 352,
-      y: 148,
-      w: 190,
-      h: 90,
+      x: 376,
+      y: 176,
+      w: 216,
+      h: 92,
     },
     {
       id: "planner",
       label: "Explainer planner",
       kicker: "STORY",
       detail: blockDetail(facts, 2, "Choose the right explainer pattern, audience depth, mode chips, and callout sequence."),
-      zone: "orchestration",
-      x: 585,
-      y: 238,
-      w: 198,
-      h: 92,
+      x: 620,
+      y: 300,
+      w: 212,
+      h: 96,
     },
     {
       id: "renderer",
       label: "HTML/SVG renderer",
       kicker: "SCENE",
       detail: blockDetail(facts, 3, "Render a self-contained interactive scene with highlighted paths and callouts."),
-      zone: "artifact",
-      x: 856,
-      y: 164,
-      w: 194,
+      x: 912,
+      y: 176,
+      w: 296,
       h: 92,
     },
     {
@@ -192,10 +195,9 @@ function createScene(source: string, audience: Audience, mode: ExplainerMode): S
       label: "Browser QA loop",
       kicker: "REPAIR",
       detail: blockDetail(facts, 4, "Check labels, spacing, contrast, click targets, overflow, and export fidelity."),
-      zone: "guardrail",
-      x: 858,
-      y: 364,
-      w: 194,
+      x: 912,
+      y: 330,
+      w: 296,
       h: 92,
     },
     {
@@ -203,10 +205,9 @@ function createScene(source: string, audience: Audience, mode: ExplainerMode): S
       label: "Explainer artifact",
       kicker: "OUTPUT",
       detail: blockDetail(facts, 5, "Save editable HTML, JSON scene data, screenshots, or recorded walkthroughs."),
-      zone: "artifact",
-      x: 586,
-      y: 494,
-      w: 198,
+      x: 912,
+      y: 484,
+      w: 296,
       h: 92,
     },
     {
@@ -214,10 +215,9 @@ function createScene(source: string, audience: Audience, mode: ExplainerMode): S
       label: "Brigade runtime",
       kicker: "ORCHESTRATION",
       detail: "Runs grounding, model routing, tool calls, browser checks, and artifact export when the pipeline grows beyond local heuristics.",
-      zone: "orchestration",
-      x: 352,
-      y: 412,
-      w: 190,
+      x: 376,
+      y: 440,
+      w: 216,
       h: 92,
     },
     {
@@ -225,11 +225,10 @@ function createScene(source: string, audience: Audience, mode: ExplainerMode): S
       label: "Evidence ledger",
       kicker: "GROUNDING",
       detail: "Keeps assumptions, source snippets, citations, and regeneration history attached to the scene.",
-      zone: "guardrail",
-      x: 95,
-      y: 456,
-      w: 178,
-      h: 86,
+      x: 72,
+      y: 420,
+      w: 216,
+      h: 92,
     },
   ];
 
@@ -240,8 +239,8 @@ function createScene(source: string, audience: Audience, mode: ExplainerMode): S
     { from: "renderer", to: "qa", label: "inspect", modes: ["architecture", "risk", "timeline"] },
     { from: "qa", to: "artifact", label: "approve", modes: ["architecture", "timeline"] },
     { from: "brigade", to: "planner", label: "route", modes: ["architecture", "request"] },
-    { from: "evidence", to: "extract", label: "ground", modes: ["architecture", "risk"] },
-    { from: "artifact", to: "planner", label: "revise", modes: ["request", "risk"] },
+    { from: "evidence", to: "extract", label: "ground", modes: ["architecture", "risk"], dashed: true },
+    { from: "artifact", to: "planner", label: "revise", modes: ["request", "risk"], dashed: true },
   ];
 
   const summaries: Record<ExplainerMode, string> = {
@@ -267,42 +266,51 @@ function truncateText(value: string, maxLength: number) {
   return compact.length > maxLength ? `${compact.slice(0, maxLength - 3).trim()}...` : compact;
 }
 
-function wrapText(value: string, maxChars: number, maxLines: number) {
-  const words = value.replace(/\s+/g, " ").trim().split(" ");
-  const lines: string[] = [];
-  let line = "";
-
-  for (const word of words) {
-    const candidate = line ? `${line} ${word}` : word;
-    if (candidate.length <= maxChars) {
-      line = candidate;
-      continue;
-    }
-
-    if (line) lines.push(line);
-    line = word.length > maxChars ? `${word.slice(0, maxChars - 1)}...` : word;
-
-    if (lines.length === maxLines) break;
-  }
-
-  if (line && lines.length < maxLines) lines.push(line);
-
-  if (lines.length === maxLines && words.join(" ").length > lines.join(" ").length) {
-    lines[maxLines - 1] = truncateText(lines[maxLines - 1], maxChars);
-  }
-
-  return lines;
-}
-
 function blockCenter(block: SceneBlock) {
   return { x: block.x + block.w / 2, y: block.y + block.h / 2 };
 }
 
-function edgePath(from: SceneBlock, to: SceneBlock) {
-  const start = blockCenter(from);
-  const end = blockCenter(to);
-  const curve = Math.max(70, Math.abs(end.x - start.x) * 0.34);
-  return `M ${start.x} ${start.y} C ${start.x + curve} ${start.y}, ${end.x - curve} ${end.y}, ${end.x} ${end.y}`;
+// Edges leave and enter card sides (not centers), curve through the gutters,
+// and report their midpoint so labels can sit on the line.
+function edgeGeometry(from: SceneBlock, to: SceneBlock) {
+  const fc = blockCenter(from);
+  const tc = blockCenter(to);
+
+  let start: { x: number; y: number };
+  let end: { x: number; y: number };
+  let horizontal: boolean;
+
+  if (to.x >= from.x + from.w) {
+    start = { x: from.x + from.w, y: fc.y };
+    end = { x: to.x - 6, y: tc.y };
+    horizontal = true;
+  } else if (to.x + to.w <= from.x) {
+    start = { x: from.x, y: fc.y };
+    end = { x: to.x + to.w + 6, y: tc.y };
+    horizontal = true;
+  } else if (tc.y >= fc.y) {
+    start = { x: fc.x, y: from.y + from.h };
+    end = { x: tc.x, y: to.y - 6 };
+    horizontal = false;
+  } else {
+    start = { x: fc.x, y: from.y };
+    end = { x: tc.x, y: to.y + to.h + 6 };
+    horizontal = false;
+  }
+
+  const span = horizontal ? end.x - start.x : end.y - start.y;
+  const bend = Math.sign(span || 1) * Math.max(36, Math.abs(span) * 0.45);
+  const c1 = horizontal ? { x: start.x + bend, y: start.y } : { x: start.x, y: start.y + bend };
+  const c2 = horizontal ? { x: end.x - bend, y: end.y } : { x: end.x, y: end.y - bend };
+  const mid = {
+    x: 0.125 * (start.x + end.x) + 0.375 * (c1.x + c2.x),
+    y: 0.125 * (start.y + end.y) + 0.375 * (c1.y + c2.y),
+  };
+
+  return {
+    path: `M ${start.x} ${start.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${end.x} ${end.y}`,
+    mid,
+  };
 }
 
 const modeCallouts: Record<ExplainerMode, { title: string; body: string }> = {
@@ -334,15 +342,22 @@ function download(filename: string, content: string, type: string) {
   URL.revokeObjectURL(url);
 }
 
+const CHIP_GAP = 8;
+const CHIP_ROW_END = 1232;
+const chipWidths = modes.map((mode) => Math.round(modeLabels[mode].length * 6.3) + 26);
+const chipRowStart = CHIP_ROW_END - chipWidths.reduce((sum, w) => sum + w, 0) - CHIP_GAP * (modes.length - 1);
+
 function SceneSvg({
   scene,
   activeMode,
+  meta,
   selectedId,
   onSelect,
   onModeChange,
 }: {
   scene: Scene;
   activeMode: ExplainerMode;
+  meta?: string;
   selectedId?: string;
   onSelect?: (id: string) => void;
   onModeChange?: (mode: ExplainerMode) => void;
@@ -351,50 +366,39 @@ function SceneSvg({
   const callout = modeCallouts[activeMode];
   const activeEdges = scene.edges.filter((edge) => edge.modes.includes(activeMode));
   const activeIds = new Set(activeEdges.flatMap((edge) => [edge.from, edge.to]));
-  const canvasTitle = truncateText(scene.title, 42);
+
+  let chipX = chipRowStart;
 
   return (
-    <svg viewBox="0 0 1180 720" role="img" aria-label={`${scene.title} interactive scene`}>
+    <svg viewBox="0 0 1280 780" role="img" aria-label={`${scene.title} interactive scene`}>
       <style>{sceneCss}</style>
       <defs>
-        <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
-          <path d="M2,2 L10,6 L2,10 Z" fill="#9fb0c7" />
+        <marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="4" orient="auto">
+          <path d="M1,1 L7,4 L1,7 Z" fill="#45433b" />
         </marker>
-        <linearGradient id="stage-bg" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0%" stopColor="#111210" />
-          <stop offset="55%" stopColor="#0d0e0c" />
-          <stop offset="100%" stopColor="#0a0b0a" />
-        </linearGradient>
-        <filter id="soft">
-          <feDropShadow dx="0" dy="12" stdDeviation="12" floodColor="#000" floodOpacity=".3" />
-        </filter>
+        <marker id="arrow-active" markerWidth="10" markerHeight="10" refX="7" refY="4" orient="auto">
+          <path d="M1,1 L7,4 L1,7 Z" fill="#a39d8c" />
+        </marker>
       </defs>
 
-      <rect width="1180" height="720" fill="url(#stage-bg)" />
-      <rect x="672" y="0" width="506" height="720" className="stage-wash" />
-      <rect x="42" y="124" width="250" height="496" rx="8" className="zone-frame" />
-      <rect x="316" y="124" width="502" height="496" rx="8" className="zone-frame" />
-      <rect x="842" y="124" width="296" height="496" rx="8" className="zone-frame" />
-      <path d="M0 88 H1180 M0 642 H1180" className="stage-grid" />
-      <text x="38" y="48" className="scene-title">
-        {canvasTitle}
+      <rect width="1280" height="780" fill="#0c0c0a" />
+
+      <text x="48" y="58" className="scene-title">
+        {truncateText(scene.title, 64)}
       </text>
-      <text x="40" y="72" className="scene-summary">
-        {scene.summary}
+      <text x="48" y="84" className="scene-summary">
+        {truncateText(scene.summary, 110)}
       </text>
-      <text x="62" y="152" className="zone-title">
-        SOURCE
-      </text>
-      <text x="340" y="152" className="zone-title">
-        ORCHESTRATION
-      </text>
-      <text x="864" y="152" className="zone-title">
-        ARTIFACT + QA
-      </text>
+      {meta ? (
+        <text x={CHIP_ROW_END} y="84" textAnchor="end" className="scene-meta">
+          {meta}
+        </text>
+      ) : null}
 
       {modes.map((item, index) => {
         const active = item === activeMode;
-        const x = 682 + index * 108;
+        const x = chipX;
+        chipX += chipWidths[index] + CHIP_GAP;
         return (
           <g
             key={item}
@@ -406,75 +410,72 @@ function SceneSvg({
               if (event.key === "Enter" || event.key === " ") onModeChange?.(item);
             }}
           >
-            <rect x={x} y="22" width="96" height="26" rx="13" className={active ? "scene-mode-active" : ""} />
-            <text x={x + 48} y="39" textAnchor="middle" className={active ? "scene-mode-text-active" : "scene-mode-text"}>
+            <rect x={x} y="28" width={chipWidths[index]} height="28" rx="14" className={active ? "scene-mode-active" : ""} />
+            <text x={x + chipWidths[index] / 2} y="46" textAnchor="middle" className={active ? "scene-mode-text-active" : "scene-mode-text"}>
               {modeLabels[item]}
             </text>
           </g>
         );
       })}
 
-      <g filter="url(#soft)">
-        {scene.edges.map((edge) => {
-          const from = blockById.get(edge.from)!;
-          const to = blockById.get(edge.to)!;
-          const active = edge.modes.includes(activeMode);
-          const path = edgePath(from, to);
-          return (
-            <g key={`${edge.from}-${edge.to}`} className={active ? "flow active" : "flow"}>
-              <path d={path} markerEnd="url(#arrow)" />
-              <path id={`path-${edge.from}-${edge.to}`} d={path} fill="none" stroke="none" />
-              <text>
-                <textPath href={`#path-${edge.from}-${edge.to}`} startOffset="50%">
-                  {edge.label}
-                </textPath>
-              </text>
-            </g>
-          );
-        })}
+      {sceneZones.map((zone) => (
+        <g key={zone.label}>
+          <rect x={zone.x} y={zone.y} width={zone.w} height={zone.h} rx="10" className="zone-frame" />
+          <text x={zone.x + 24} y={zone.y + 32} className="zone-title">
+            {zone.label}
+          </text>
+          <text x={zone.x + 24} y={zone.y + 50} className="zone-desc">
+            {zone.desc}
+          </text>
+        </g>
+      ))}
 
-        {scene.blocks.map((block) => {
-          const colors = zoneColors[block.zone];
-          const active = activeIds.has(block.id) || activeMode === "architecture";
-          const selected = selectedId === block.id;
-          const label = truncateText(block.label, Math.max(16, Math.floor((block.w - 32) / 8.4)));
-          const detailLines = wrapText(block.detail, Math.max(18, Math.floor((block.w - 32) / 6.2)), 2);
-          return (
-            <g
-              key={block.id}
-              className={`scene-block ${active ? "active" : ""} ${selected ? "selected" : ""}`}
-              role="button"
-              tabIndex={0}
-              onClick={() => onSelect?.(block.id)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") onSelect?.(block.id);
-              }}
-            >
-              <rect x={block.x} y={block.y} width={block.w} height={block.h} rx="8" fill={colors.fill} stroke={selected ? "#f4efe5" : active ? colors.chip : colors.stroke} />
-              <text x={block.x + 16} y={block.y + 24} className="block-kicker">
-                {block.kicker}
-              </text>
-              <text x={block.x + 16} y={block.y + 50} className="block-label">
-                {label}
-              </text>
-              <text x={block.x + 16} y={block.y + 72} className="block-zone">
-                {detailLines.map((line, index) => (
-                  <tspan key={`${block.id}-${index}`} x={block.x + 16} dy={index === 0 ? 0 : 14}>
-                    {line}
-                  </tspan>
-                ))}
-              </text>
-            </g>
-          );
-        })}
-      </g>
+      {scene.edges.map((edge) => {
+        const from = blockById.get(edge.from)!;
+        const to = blockById.get(edge.to)!;
+        const active = edge.modes.includes(activeMode);
+        const { path, mid } = edgeGeometry(from, to);
+        return (
+          <g key={`${edge.from}-${edge.to}`} className={`flow ${active ? "active" : ""} ${edge.dashed ? "dashed" : ""}`}>
+            <path d={path} markerEnd={active ? "url(#arrow-active)" : "url(#arrow)"} />
+            <text x={mid.x} y={mid.y - 6} textAnchor="middle" className="flow-label">
+              {edge.label}
+            </text>
+          </g>
+        );
+      })}
+
+      {scene.blocks.map((block) => {
+        const active = activeIds.has(block.id) || activeMode === "architecture";
+        const selected = selectedId === block.id;
+        return (
+          <g
+            key={block.id}
+            className={`scene-block ${active ? "active" : ""} ${selected ? "selected" : ""}`}
+            role="button"
+            tabIndex={0}
+            onClick={() => onSelect?.(block.id)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") onSelect?.(block.id);
+            }}
+          >
+            <rect x={block.x} y={block.y} width={block.w} height={block.h} rx="10" className="card-rect" />
+            <foreignObject x={block.x} y={block.y} width={block.w} height={block.h}>
+              <div className="card">
+                <h3>{block.label}</h3>
+                <p>{block.detail}</p>
+              </div>
+            </foreignObject>
+          </g>
+        );
+      })}
 
       <g className="callout">
-        <rect x="870" y="520" width="238" height="108" rx="8" />
-        <text x="894" y="552" className="callout-title">
+        <rect x="48" y="648" width="400" height="112" rx="10" />
+        <text x="72" y="682" className="callout-title">
           {callout.title}
         </text>
-        <foreignObject x="894" y="568" width="184" height="48">
+        <foreignObject x="72" y="694" width="352" height="54">
           <p>{callout.body}</p>
         </foreignObject>
       </g>
@@ -604,7 +605,14 @@ export default function App() {
         <section className="artifact-workbench">
           <section className="stage-panel">
             <div className="stage">
-              <SceneSvg scene={scene} activeMode={mode} selectedId={selected.id} onSelect={setSelectedId} onModeChange={setMode} />
+              <SceneSvg
+                scene={scene}
+                activeMode={mode}
+                meta={`${audience} audience · ${modeLabels[mode].toLowerCase()} mode`}
+                selectedId={selected.id}
+                onSelect={setSelectedId}
+                onModeChange={setMode}
+              />
             </div>
           </section>
 

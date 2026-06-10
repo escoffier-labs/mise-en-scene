@@ -1,46 +1,60 @@
 // Styles for everything rendered inside the scene SVG. Injected via a <style>
 // element inside the SVG itself so the live app and exported standalone HTML
 // share one stylesheet and cannot drift apart.
+//
+// Type system: Newsreader for display, IBM Plex Mono for metadata and detail,
+// IBM Plex Sans for card titles. One warm copper accent, used sparingly.
+
+export const fontImport = `@import url("https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap");`;
+
+const serif = `Newsreader, "Iowan Old Style", Palatino, Georgia, serif`;
+const mono = `"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+const sans = `"IBM Plex Sans", system-ui, sans-serif`;
+
 export const sceneCss = `
-.stage-wash {
-  fill: #10130e;
-  opacity: 0.52;
-}
-
-.stage-grid {
-  stroke: #24241f;
-  stroke-width: 1;
-}
-
-.zone-frame {
-  fill: rgba(255, 255, 255, 0.012);
-  stroke: #37372f;
-  stroke-dasharray: 5 5;
-  stroke-width: 1;
-}
-
 .scene-title {
-  fill: #f1efe7;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 24px;
+  fill: #ece7da;
+  font-family: ${serif};
+  font-size: 30px;
   font-weight: 500;
 }
 
 .scene-summary {
-  fill: #77766f;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  fill: #6f6d63;
+  font-family: ${mono};
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
+.scene-meta {
+  fill: #565349;
+  font-family: ${mono};
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.zone-frame {
+  fill: none;
+  stroke: #2b2a24;
+  stroke-dasharray: 4 5;
+  stroke-width: 1;
+}
+
 .zone-title {
-  fill: #77766f;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  fill: #7e7b6f;
+  font-family: ${mono};
   font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+
+.zone-desc {
+  fill: #565349;
+  font-family: ${mono};
+  font-size: 10px;
+  letter-spacing: 0.02em;
 }
 
 .scene-mode {
@@ -48,62 +62,74 @@ export const sceneCss = `
 }
 
 .scene-mode rect {
-  fill: #151613;
-  stroke: #32332d;
+  fill: #131310;
+  stroke: #2e2d27;
+}
+
+.scene-mode:hover rect {
+  stroke: #56534a;
 }
 
 .scene-mode .scene-mode-active {
-  fill: #e9e5d9;
-  stroke: #e9e5d9;
+  fill: #e6e1d2;
+  stroke: #e6e1d2;
 }
 
 .scene-mode-text {
-  fill: #918f84;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  fill: #8b887c;
+  font-family: ${mono};
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .scene-mode-text-active {
-  fill: #11120f;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  fill: #131310;
+  font-family: ${mono};
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 600;
+}
+
+.flow path {
+  fill: none;
+  stroke: #45433b;
+  stroke-width: 1.1;
+}
+
+.flow.dashed path {
+  stroke-dasharray: 4 5;
 }
 
 .flow {
-  opacity: 0.17;
-}
-
-.flow path:first-child {
-  fill: none;
-  stroke: #77766e;
-  stroke-width: 1.1;
+  opacity: 0.35;
 }
 
 .flow.active {
   opacity: 1;
 }
 
-.flow.active path:first-child {
-  stroke: #cbc4b4;
-  stroke-width: 1.9;
+.flow.active path {
+  stroke: #a39d8c;
+  stroke-width: 1.4;
 }
 
-.flow textPath {
-  fill: #6f6d65;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+.flow-label {
+  fill: #6f6d63;
+  font-family: ${mono};
   font-size: 10px;
-  font-weight: 700;
+  letter-spacing: 0.02em;
+  paint-order: stroke;
+  stroke: #0c0c0a;
+  stroke-width: 5px;
+  stroke-linejoin: round;
 }
 
-.flow.active textPath {
-  fill: #d7d0c0;
+.flow.active .flow-label {
+  fill: #c4bdab;
 }
 
 .scene-block {
   cursor: pointer;
-  opacity: 0.32;
+  opacity: 0.35;
 }
 
 .scene-block.active,
@@ -111,93 +137,119 @@ export const sceneCss = `
   opacity: 1;
 }
 
-.scene-block rect:first-child {
+.card-rect {
+  fill: #15140f;
+  stroke: #2e2c24;
   stroke-width: 1;
 }
 
-.scene-block.active rect:first-child {
-  stroke-width: 1.7;
+.scene-block:hover .card-rect {
+  stroke: #4d4a3f;
 }
 
-.scene-block.selected rect:first-child {
-  stroke-width: 2.2;
+.scene-block.selected .card-rect {
+  stroke: #b98a64;
+  stroke-width: 1.3;
 }
 
-.block-kicker {
-  fill: #8b8a82;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+.card {
+  padding: 13px 16px;
+  pointer-events: none;
 }
 
-.block-label {
-  fill: #f1efe7;
-  font-size: 14px;
-  font-weight: 800;
+.card h3 {
+  margin: 0 0 5px;
+  overflow: hidden;
+  color: #efebe0;
+  font-family: ${sans};
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.block-zone {
-  fill: #aaa79a;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 10px;
+.card p {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: #898577;
+  font-family: ${mono};
+  font-size: 10.5px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .callout rect {
-  fill: #181814;
-  stroke: #4b4336;
+  fill: #16130e;
+  stroke: #7c5a40;
+  stroke-width: 1;
 }
 
 .callout-title {
-  fill: #f1efe7;
-  font-size: 15px;
-  font-weight: 800;
+  fill: #d9b491;
+  font-family: ${serif};
+  font-size: 17px;
+  font-weight: 500;
 }
 
 .callout p {
   margin: 0;
-  color: #aaa79a;
-  font:
-    12px/1.35 ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Consolas,
-    monospace;
+  color: #968f7f;
+  font-family: ${mono};
+  font-size: 10.5px;
+  line-height: 1.5;
 }
 `;
 
-// Page chrome for the exported standalone HTML artifact, matching the app's
-// warm palette.
+// Page chrome for the exported standalone HTML artifact, matching the app.
 export const standaloneCss = `
+${fontImport}
+
 body {
   margin: 0;
-  background: #0a0b0a;
-  color: #eeeae1;
-  font: 15px/1.5 Inter, ui-sans-serif, system-ui, sans-serif;
+  background: #0c0c0a;
+  color: #e9e4d7;
+  font-family: ${sans};
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 main {
-  max-width: 1260px;
+  max-width: 1280px;
   margin: auto;
-  padding: 24px;
+  padding: 28px;
 }
 
 h1 {
-  margin: 0 0 8px;
-  color: #f3efe5;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 32px;
+  margin: 0 0 6px;
+  color: #ece7da;
+  font-family: ${serif};
+  font-size: 34px;
   font-weight: 500;
 }
 
-p {
-  color: #a9a79c;
+h2 {
+  margin: 0 0 10px;
+  color: #b8b2a2;
+  font-family: ${mono};
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+p,
+li {
+  color: #8f8b7d;
 }
 
 .scene {
-  border: 1px solid #282923;
+  border: 1px solid #25241e;
   border-radius: 12px;
-  background: #0b0c0b;
+  background: #0c0c0a;
   overflow: hidden;
 }
 
@@ -215,23 +267,25 @@ p {
 }
 
 .panel {
-  border: 1px solid #282923;
+  border: 1px solid #25241e;
   border-radius: 10px;
-  padding: 16px;
-  background: #121310;
+  padding: 18px;
+  background: #11100c;
 }
 
 .panel li {
-  color: #a9a79c;
+  font-size: 13px;
 }
 
 .panel span {
   display: inline-block;
-  border: 1px solid #3a3a33;
+  border: 1px solid #353329;
   border-radius: 999px;
-  padding: 4px 9px;
+  padding: 4px 10px;
   margin: 3px;
-  color: #c7c0b1;
+  color: #b8b2a2;
+  font-family: ${mono};
+  font-size: 11px;
 }
 
 @media (max-width: 780px) {
