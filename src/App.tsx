@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { sceneCss, standaloneCss } from "./sceneStyles";
+import { T, sceneCss, standaloneCss } from "./sceneStyles";
 
 type Audience = "engineer" | "exec" | "student" | "customer";
 type ExplainerMode = "architecture" | "request" | "risk" | "timeline";
@@ -374,14 +374,14 @@ function SceneSvg({
       <style>{sceneCss}</style>
       <defs>
         <marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="4" orient="auto">
-          <path d="M1,1 L7,4 L1,7 Z" fill="#45433b" />
+          <path d="M1,1 L7,4 L1,7 Z" fill={T.edge} />
         </marker>
         <marker id="arrow-active" markerWidth="10" markerHeight="10" refX="7" refY="4" orient="auto">
-          <path d="M1,1 L7,4 L1,7 Z" fill="#a39d8c" />
+          <path d="M1,1 L7,4 L1,7 Z" fill={T.accent} />
         </marker>
       </defs>
 
-      <rect width="1280" height="780" fill="#0c0c0a" />
+      <rect width="1280" height="780" fill={T.bg} />
 
       <text x="48" y="58" className="scene-title">
         {truncateText(scene.title, 64)}
@@ -563,14 +563,18 @@ export default function App() {
     <main className="app-shell">
       <header className="topbar">
         <div>
-          <p className="eyebrow">Escoffier Labs</p>
-          <h1>Mise en Scene</h1>
+          <p className="eyebrow">Escoffier Labs &middot; the studio</p>
+          <h1 className="wordmark">
+            mise-en-scene<span className="wordmark-cursor">_</span>
+          </h1>
         </div>
         <div className="actions" aria-label="Artifact actions">
           <span className="export-status" role="status" aria-live="polite">
             {exportNotice}
           </span>
-          <button onClick={() => handleExport("mise-en-scene.html", standaloneHtml(scene, mode), "text/html")}>Export HTML</button>
+          <button className="primary" onClick={() => handleExport("mise-en-scene.html", standaloneHtml(scene, mode), "text/html")}>
+            Export HTML
+          </button>
           <button onClick={() => handleExport("mise-en-scene.json", JSON.stringify(scene, null, 2), "application/json")}>Export JSON</button>
         </div>
       </header>

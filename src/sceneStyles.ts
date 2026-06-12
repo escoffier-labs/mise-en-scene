@@ -2,25 +2,43 @@
 // element inside the SVG itself so the live app and exported standalone HTML
 // share one stylesheet and cannot drift apart.
 //
-// Type system: Newsreader for display, IBM Plex Mono for metadata and detail,
-// IBM Plex Sans for card titles. One warm copper accent, used sparingly.
+// Type system: Inter for display, IBM Plex Mono for metadata and detail.
+// The ledger palette: ink ground, amber accent, cool greys. Tokens are
+// literals (not CSS vars) because this sheet ships inside exported SVGs.
 
-export const fontImport = `@import url("https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap");`;
+export const T = {
+  bg: "#0d1014",
+  panel: "#11161c",
+  card: "#121821",
+  hairline: "#232b34",
+  hairlineStrong: "#2a323d",
+  hover: "#43505e",
+  text: "#dde3ea",
+  muted: "#9aa4b2",
+  dim: "#7d8590",
+  faint: "#5c6672",
+  accent: "#e0a45c",
+  accentDeep: "#9c6f3a",
+  onAccent: "#0d1014",
+  edge: "#38424e",
+} as const;
 
-const serif = `Newsreader, "Iowan Old Style", Palatino, Georgia, serif`;
+export const fontImport = `@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");`;
+
+const sans = `Inter, system-ui, sans-serif`;
 const mono = `"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
-const sans = `"IBM Plex Sans", system-ui, sans-serif`;
 
 export const sceneCss = `
 .scene-title {
-  fill: #ece7da;
-  font-family: ${serif};
-  font-size: 30px;
-  font-weight: 500;
+  fill: ${T.text};
+  font-family: ${sans};
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .scene-summary {
-  fill: #6f6d63;
+  fill: ${T.dim};
   font-family: ${mono};
   font-size: 10px;
   font-weight: 600;
@@ -29,7 +47,7 @@ export const sceneCss = `
 }
 
 .scene-meta {
-  fill: #565349;
+  fill: ${T.faint};
   font-family: ${mono};
   font-size: 10px;
   letter-spacing: 0.04em;
@@ -37,13 +55,13 @@ export const sceneCss = `
 
 .zone-frame {
   fill: none;
-  stroke: #2b2a24;
+  stroke: ${T.hairline};
   stroke-dasharray: 4 5;
   stroke-width: 1;
 }
 
 .zone-title {
-  fill: #7e7b6f;
+  fill: ${T.muted};
   font-family: ${mono};
   font-size: 11px;
   font-weight: 600;
@@ -51,7 +69,7 @@ export const sceneCss = `
 }
 
 .zone-desc {
-  fill: #565349;
+  fill: ${T.faint};
   font-family: ${mono};
   font-size: 10px;
   letter-spacing: 0.02em;
@@ -62,28 +80,28 @@ export const sceneCss = `
 }
 
 .scene-mode rect {
-  fill: #131310;
-  stroke: #2e2d27;
+  fill: ${T.panel};
+  stroke: ${T.hairlineStrong};
 }
 
 .scene-mode:hover rect {
-  stroke: #56534a;
+  stroke: ${T.hover};
 }
 
 .scene-mode .scene-mode-active {
-  fill: #e6e1d2;
-  stroke: #e6e1d2;
+  fill: ${T.accent};
+  stroke: ${T.accent};
 }
 
 .scene-mode-text {
-  fill: #8b887c;
+  fill: ${T.muted};
   font-family: ${mono};
   font-size: 10px;
   font-weight: 500;
 }
 
 .scene-mode-text-active {
-  fill: #131310;
+  fill: ${T.onAccent};
   font-family: ${mono};
   font-size: 10px;
   font-weight: 600;
@@ -91,7 +109,7 @@ export const sceneCss = `
 
 .flow path {
   fill: none;
-  stroke: #45433b;
+  stroke: ${T.edge};
   stroke-width: 1.1;
 }
 
@@ -108,23 +126,23 @@ export const sceneCss = `
 }
 
 .flow.active path {
-  stroke: #a39d8c;
+  stroke: ${T.accent};
   stroke-width: 1.4;
 }
 
 .flow-label {
-  fill: #6f6d63;
+  fill: ${T.dim};
   font-family: ${mono};
   font-size: 10px;
   letter-spacing: 0.02em;
   paint-order: stroke;
-  stroke: #0c0c0a;
+  stroke: ${T.bg};
   stroke-width: 5px;
   stroke-linejoin: round;
 }
 
 .flow.active .flow-label {
-  fill: #c4bdab;
+  fill: ${T.accent};
 }
 
 .scene-block {
@@ -138,17 +156,17 @@ export const sceneCss = `
 }
 
 .card-rect {
-  fill: #15140f;
-  stroke: #2e2c24;
+  fill: ${T.card};
+  stroke: ${T.hairlineStrong};
   stroke-width: 1;
 }
 
 .scene-block:hover .card-rect {
-  stroke: #4d4a3f;
+  stroke: ${T.hover};
 }
 
 .scene-block.selected .card-rect {
-  stroke: #b98a64;
+  stroke: ${T.accent};
   stroke-width: 1.3;
 }
 
@@ -160,7 +178,7 @@ export const sceneCss = `
 .card h3 {
   margin: 0 0 5px;
   overflow: hidden;
-  color: #efebe0;
+  color: ${T.text};
   font-family: ${sans};
   font-size: 13px;
   font-weight: 600;
@@ -174,7 +192,7 @@ export const sceneCss = `
   display: -webkit-box;
   margin: 0;
   overflow: hidden;
-  color: #898577;
+  color: ${T.muted};
   font-family: ${mono};
   font-size: 10.5px;
   line-height: 1.5;
@@ -183,21 +201,22 @@ export const sceneCss = `
 }
 
 .callout rect {
-  fill: #16130e;
-  stroke: #7c5a40;
+  fill: ${T.panel};
+  stroke: ${T.accentDeep};
   stroke-width: 1;
 }
 
 .callout-title {
-  fill: #d9b491;
-  font-family: ${serif};
-  font-size: 17px;
-  font-weight: 500;
+  fill: ${T.accent};
+  font-family: ${sans};
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .callout p {
   margin: 0;
-  color: #968f7f;
+  color: ${T.muted};
   font-family: ${mono};
   font-size: 10.5px;
   line-height: 1.5;
@@ -210,8 +229,8 @@ ${fontImport}
 
 body {
   margin: 0;
-  background: #0c0c0a;
-  color: #e9e4d7;
+  background: ${T.bg};
+  color: ${T.text};
   font-family: ${sans};
   font-size: 15px;
   line-height: 1.5;
@@ -225,15 +244,16 @@ main {
 
 h1 {
   margin: 0 0 6px;
-  color: #ece7da;
-  font-family: ${serif};
-  font-size: 34px;
-  font-weight: 500;
+  color: ${T.text};
+  font-family: ${sans};
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 h2 {
   margin: 0 0 10px;
-  color: #b8b2a2;
+  color: ${T.accent};
   font-family: ${mono};
   font-size: 10px;
   font-weight: 600;
@@ -243,13 +263,13 @@ h2 {
 
 p,
 li {
-  color: #8f8b7d;
+  color: ${T.muted};
 }
 
 .scene {
-  border: 1px solid #25241e;
+  border: 1px solid ${T.hairline};
   border-radius: 12px;
-  background: #0c0c0a;
+  background: ${T.bg};
   overflow: hidden;
 }
 
@@ -267,10 +287,10 @@ li {
 }
 
 .panel {
-  border: 1px solid #25241e;
+  border: 1px solid ${T.hairline};
   border-radius: 10px;
   padding: 18px;
-  background: #11100c;
+  background: ${T.panel};
 }
 
 .panel li {
@@ -279,11 +299,11 @@ li {
 
 .panel span {
   display: inline-block;
-  border: 1px solid #353329;
+  border: 1px solid ${T.hairlineStrong};
   border-radius: 999px;
   padding: 4px 10px;
   margin: 3px;
-  color: #b8b2a2;
+  color: ${T.muted};
   font-family: ${mono};
   font-size: 11px;
 }
