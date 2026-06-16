@@ -354,6 +354,7 @@ function SceneSvg({
   selectedId,
   onSelect,
   onModeChange,
+  staticExport,
 }: {
   scene: Scene;
   activeMode: ExplainerMode;
@@ -361,6 +362,7 @@ function SceneSvg({
   selectedId?: string;
   onSelect?: (id: string) => void;
   onModeChange?: (mode: ExplainerMode) => void;
+  staticExport?: boolean;
 }) {
   const blockById = new Map(scene.blocks.map((block) => [block.id, block]));
   const callout = modeCallouts[activeMode];
@@ -370,7 +372,11 @@ function SceneSvg({
   let chipX = chipRowStart;
 
   return (
-    <svg viewBox="0 0 1280 780" role="img" aria-label={`${scene.title} interactive scene`}>
+    <svg
+      viewBox="0 0 1280 780"
+      role={staticExport ? "img" : "group"}
+      aria-label={`${scene.title} interactive scene`}
+    >
       <style>{sceneCss}</style>
       <defs>
         <marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="4" orient="auto">
@@ -404,10 +410,14 @@ function SceneSvg({
             key={item}
             role="button"
             tabIndex={0}
+            aria-label={`Switch to ${modeLabels[item]} mode`}
             className="scene-mode"
             onClick={() => onModeChange?.(item)}
             onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") onModeChange?.(item);
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onModeChange?.(item);
+              }
             }}
           >
             <rect x={x} y="28" width={chipWidths[index]} height="28" rx="14" className={active ? "scene-mode-active" : ""} />
@@ -454,9 +464,13 @@ function SceneSvg({
             className={`scene-block ${active ? "active" : ""} ${selected ? "selected" : ""}`}
             role="button"
             tabIndex={0}
+            aria-label={block.label}
             onClick={() => onSelect?.(block.id)}
             onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") onSelect?.(block.id);
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onSelect?.(block.id);
+              }
             }}
           >
             <rect x={block.x} y={block.y} width={block.w} height={block.h} rx="10" className="card-rect" />
@@ -499,7 +513,7 @@ function StandalonePage({ scene, mode }: { scene: Scene; mode: ExplainerMode }) 
             {scene.subtitle} Mode: {modeLabels[mode]}.
           </p>
           <section className="scene">
-            <SceneSvg scene={scene} activeMode={mode} />
+            <SceneSvg scene={scene} activeMode={mode} staticExport />
           </section>
           <section className="meta">
             <div className="panel">
