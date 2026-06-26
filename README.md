@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/mise-en-scene-social-preview.jpg" alt="Mise en Scene banner" width="900">
+</p>
+
 <h1 align="center">Mise en Scene</h1>
 
 <p align="center">
