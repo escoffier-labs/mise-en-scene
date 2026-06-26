@@ -1,0 +1,59 @@
+name: Bug report
+description: Something is broken in Mise en Scene, such as scene extraction, rendering, the studio, or the standalone HTML export.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you do, and what did you expect versus what you got?
+      placeholder: |
+        I pasted an OpenAPI spec into the studio and the scene rendered X.
+        I expected Y.
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source material
+      description: The input you pasted or ingested, redacted as needed. Even a small reproduction helps a lot.
+      render: text
+    validations:
+      required: false
+  - type: input
+    id: where
+    attributes:
+      label: Where it happened
+      description: Local dev server, the hosted studio, or a standalone HTML export?
+      placeholder: local dev server (npm run dev), hosted studio, or exported HTML
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS
+      placeholder: Chrome 126 on Ubuntu 24.04, Safari 17 on macOS 14.5, etc.
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Node version (for build or dev issues)
+      placeholder: 22.x
+    validations:
+      required: false
+  - type: textarea
+    id: console
+    attributes:
+      label: Console output
+      description: Paste any browser console or build errors. Keep enough for us to reproduce.
+      render: shell
+    validations:
+      required: false
+  - type: checkboxes
+    id: scrub
+    attributes:
+      label: Pre-flight
+      options:
+        - label: I have scrubbed any personal hostnames, tokens, or paths from this report and from any source material I pasted.
+          required: true
