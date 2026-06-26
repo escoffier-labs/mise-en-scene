@@ -28,6 +28,12 @@ chips and click targets. Unlike a static diagram editor, the same `SceneSvg`
 component drives both the live studio and the export, so a one-file standalone
 HTML artifact always looks exactly like what you built.
 
+<p align="center">
+  <img src="docs/assets/mise-en-scene-studio.png" alt="The Mise en Scene studio: a source panel on the left and a rendered interactive HTML/SVG explainer scene on the right, with audience-mode chips, source-grounded facts, and HTML/JSON export" width="900">
+</p>
+
+<p align="center"><em>The studio rendering a live scene. The standalone HTML export uses the same <code>SceneSvg</code> component, so what you preview is what you ship.</em></p>
+
 ## What it does
 
 Mise en Scene is an interactive diagram and explainer generator for software
