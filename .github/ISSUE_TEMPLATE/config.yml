@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Escoffier Labs
+    url: https://mise-en-scene.escoffierlabs.dev
+    about: Product site and studio. Try the tool before filing an issue here.
+  - name: Security report
+    url: https://github.com/escoffier-labs/mise-en-scene/security/policy
+    about: Do not file security issues publicly. See SECURITY.md.

@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest an improvement to extraction, rendering, audience modes, or export.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the source material you have and the explainer you want out of it.
+      placeholder: |
+        I have an incident report and I want a timeline-mode explainer I can hand to non-engineers.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to see?
+      description: A new export target, a new ingestion mode, an audience mode, a rendering change, or something else.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you have considered
+      description: Other tools or workarounds you tried, and why they fell short.
+    validations:
+      required: false
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      description: New export targets and new ingestion modes are public surface. See CONTRIBUTING.md.
+      options:
+        - label: I understand a new export target or ingestion mode usually needs an issue discussion before a PR.
+          required: false
