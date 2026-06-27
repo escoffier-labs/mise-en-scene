@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-- README rewritten to the adoption-upgrade structure: opens with what / why / how-it-differs, leads with the website and studio links, adds a "Why not a general diagram editor?" comparison and a "What Mise en Scene is not" boundaries section, and gives a verified copy-paste quickstart matching the real `npm` scripts.
+## [0.1.0] - 2026-06-27
 
 ### Added
+- Initial interactive HTML/SVG technical explainer studio for turning repo context, API specs, or README material into editable, shareable diagrams.
 - Maintainer-health files: `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, GitHub issue templates (`bug`, `feature`, `config` with blank issues disabled), and a pull request template with a no-PII content-guard checkbox.
 - A proof screenshot of the live studio near the top of the README (`docs/assets/mise-en-scene-studio.png`): the source panel beside a rendered interactive scene with audience-mode chips, source-grounded facts, and HTML/JSON export, so the README leads with the product working rather than brand art alone.
+
+### Changed
+- Redesigned the scene UI toward an editorial diagram aesthetic, then aligned it with the ledger palette and fleet wordmark.
+- Refactored SVG rendering so the app and HTML export use one source.
+- Added CI, a verify gate, agent guidance, and a fleet-standard README.
+- README rewritten to the adoption-upgrade structure: opens with what / why / how-it-differs, leads with the website and studio links, adds a "Why not a general diagram editor?" comparison and a "What Mise en Scene is not" boundaries section, and gives a verified copy-paste quickstart matching the real `npm` scripts.
