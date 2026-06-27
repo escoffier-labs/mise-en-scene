@@ -9,15 +9,15 @@
 </p>
 
 <p align="center">
+  <a href="https://mise-en-scene.escoffierlabs.dev"><strong>Website</strong></a> ·
+  <a href="https://app.mise-en-scene.escoffierlabs.dev"><strong>Studio</strong></a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/github/actions/workflow/status/escoffier-labs/mise-en-scene/ci.yml?branch=main&style=for-the-badge&label=ci" alt="CI status">
   <img src="https://img.shields.io/badge/version-0.1.0-blue?style=for-the-badge" alt="Version 0.1.0">
   <img src="https://img.shields.io/badge/react-19-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React 19">
   <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="MIT license">
-</p>
-
-<p align="center">
-  <a href="https://mise-en-scene.escoffierlabs.dev"><strong>Website</strong></a> ·
-  <a href="https://app.mise-en-scene.escoffierlabs.dev"><strong>Studio</strong></a>
 </p>
 
 Mise en Scene is a browser tool that turns a repo, an OpenAPI spec, a README, an
