@@ -5,69 +5,51 @@
 <h1 align="center">Mise en Scene</h1>
 
 <p align="center">
-  <strong>Turn source material into self-contained interactive technical explainers.</strong>
+  <img src="docs/assets/marks/mise-en-scene-circle.svg" alt="" width="40" height="40">
 </p>
 
 <p align="center">
-  <a href="https://mise-en-scene.escoffierlabs.dev"><strong>Website</strong></a> ·
-  <a href="https://app.mise-en-scene.escoffierlabs.dev"><strong>Studio</strong></a>
+  <strong>Turn a repo or incident report into an interactive explainer you can ship.</strong>
+</p>
+
+<p align="center">
+  Browser studio that extracts systems, actors, and source-grounded facts into editable HTML/SVG scenes. Same component for live preview and standalone export.
+</p>
+
+<p align="center">
+  <a href="https://mise-en-scene.escoffierlabs.dev">Website</a> &middot; <a href="https://app.mise-en-scene.escoffierlabs.dev">Studio</a> &middot; <a href="#install">Install</a>
 </p>
 
 <p align="center">
   <img src="https://shieldcn.dev/github/ci/escoffier-labs/mise-en-scene.svg?branch=main&workflow=ci.yml" alt="CI status">
   <img src="https://shieldcn.dev/badge/version-0.1.0-blue.svg" alt="Version 0.1.0">
-  <img src="https://shieldcn.dev/badge/react-19-61DAFB.svg?logo=react&logoColor=white" alt="React 19">
   <img src="https://shieldcn.dev/badge/license-MIT-green.svg" alt="MIT license">
 </p>
 
-Mise en Scene is a browser tool that turns a repo, an OpenAPI spec, a README, an
-incident report, or architecture notes into an editable HTML/SVG technical
-explainer you can hand to anyone. It extracts the systems, actors, flows, terms,
-and source-grounded facts, then renders an interactive scene with audience-mode
-chips and click targets. Unlike a static diagram editor, the same `SceneSvg`
-component drives both the live studio and the export, so a one-file standalone
-HTML artifact always looks exactly like what you built.
-
-<p align="center">
-  <img src="docs/assets/mise-en-scene-studio.png" alt="The Mise en Scene studio: a source panel on the left and a rendered interactive HTML/SVG explainer scene on the right, with audience-mode chips, source-grounded facts, and HTML/JSON export" width="900">
-</p>
-
-<p align="center"><em>The studio rendering a live scene. The standalone HTML export uses the same <code>SceneSvg</code> component, so what you preview is what you ship.</em></p>
-
-## What it does
-
-Mise en Scene is an interactive diagram and explainer generator for software
-documentation. Paste source material and it builds a scene model (systems,
-actors, flows, terms, and the facts that back each one), then renders an
-editable SVG explainer in the browser. Four audience modes reframe the same
-scene for engineers, execs, students, or customers, and click targets let a
-reader drill into any node. When you are done, export a single standalone HTML
-file. The export is rendered from the same `SceneSvg` React component the studio
-uses (via `renderToStaticMarkup`), so the artifact you send matches the scene
-you saw, with no separate render path to drift out of sync.
-
-## Quickstart
+## Install
 
 ```bash
 git clone https://github.com/escoffier-labs/mise-en-scene.git
 cd mise-en-scene
-npm install
-npm run dev
+# follow package.json scripts for studio dev server
+npm install && npm run dev
 ```
 
-The dev server prints a local URL on startup. Open it in your browser, paste
-source material into the studio, edit the scene, and export a standalone HTML
-artifact.
+## What it does
 
-To build and preview a production bundle:
+| | Job | What you get |
+|---|---|---|
+| **Ingest** | Source material | Repos, OpenAPI, README, incident notes |
+| **Extract** | Source-grounded facts | Systems, actors, flows, terms with provenance |
+| **Stage** | Interactive scene | Audience modes and click targets |
+| **Export** | Self-contained HTML/SVG | What you preview is what you ship |
 
-```bash
-npm run build      # tsc -b && vite build
-npm run preview    # serves the production build locally
-```
+<p align="center">
+  <img src="docs/assets/mise-en-scene-studio.png" alt="Mise en Scene studio" width="760">
+</p>
 
-The single verification gate is `./scripts/verify`, which runs `tsc -b && vite
-build`. CI runs the same command on every push and pull request.
+<p align="center"><em>Studio on the left, scene on the right. Standalone export uses the same SceneSvg component.</em></p>
+
 
 ## Code layout
 
