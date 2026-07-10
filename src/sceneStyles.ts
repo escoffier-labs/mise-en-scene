@@ -130,6 +130,22 @@ export const sceneCss = `
   stroke-width: 1.4;
 }
 
+.selected path,
+.selected .card-rect {
+  stroke: ${T.accent};
+  stroke-width: 2.5;
+}
+
+.ungrounded {
+  opacity: 0.22;
+}
+
+.lifeline {
+  stroke: ${T.hairlineStrong};
+  stroke-width: 1;
+  stroke-dasharray: 4 5;
+}
+
 .flow-label {
   fill: ${T.dim};
   font-family: ${mono};
