@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Deterministic source-derived blocks, relationships, facts, and evidence ranges.
+- Structured OpenAPI JSON extraction for API, tag, and operation elements.
+- Architecture and sequence scene layouts plus an evidence review filter.
+- Versioned JSON import and export with validation for untrusted documents.
+- Editable block and relationship labels with source evidence navigation.
+- Offline interactive HTML export and script-free SVG export from the shared renderer.
+- Node-based tests for validation, extraction, layout, editing, and export safety.
+
 ## [0.1.0] - 2026-06-27
 
 ### Added

@@ -28,8 +28,8 @@ Execute task-by-task, tracking these checkboxes. Every behavior begins with a fo
 
 **Files:** Create `src/scene/types.ts`, `src/scene/validate.ts`, `src/scene/validate.test.ts`; modify `package.json`, `tsconfig.json`, `scripts/verify`.
 
-- [ ] Add `npm test` as `node --experimental-strip-types --test "src/**/*.test.ts"`, enable `allowImportingTsExtensions`, and make `./scripts/verify` run tests before build.
-- [ ] Write a failing validator test which imports `validateSceneDocument`, accepts a minimal schema-v1 document, rejects duplicate IDs and dangling edge endpoints, and asserts the first error path.
+- [x] Add `npm test` as `node --experimental-strip-types --test "src/**/*.test.ts"`, enable `allowImportingTsExtensions`, and make `./scripts/verify` run tests before build.
+- [x] Write a failing validator test which imports `validateSceneDocument`, accepts a minimal schema-v1 document, rejects duplicate IDs and dangling edge endpoints, and asserts the first error path.
 
 ```ts
 test("rejects dangling endpoints without replacing the document", () => {
@@ -42,66 +42,66 @@ test("rejects dangling endpoints without replacing the document", () => {
 });
 ```
 
-- [ ] Run `npm test -- --test-name-pattern="dangling endpoints"`; expect failure because the module does not exist.
-- [ ] Implement the exact schema from the approved spec, `SCENE_LIMITS`, deterministic `slugId`, and `validateSceneDocument(value): {ok:true; value:SceneDocument}|{ok:false; error:string}`. Validate size limits, enums, finite geometry, positive sizes, uniqueness, fact references, and endpoints in stable field order.
-- [ ] Run `npm test`; expect all validator tests to pass. Run `npm run build`; expect success.
-- [ ] Commit with `git add package.json tsconfig.json scripts/verify src/scene && git commit -m "feat: add versioned scene validation"`.
+- [x] Run `npm test -- --test-name-pattern="dangling endpoints"`; expect failure because the module does not exist.
+- [x] Implement the exact schema from the approved spec, `SCENE_LIMITS`, deterministic `slugId`, and `validateSceneDocument(value): {ok:true; value:SceneDocument}|{ok:false; error:string}`. Validate size limits, enums, finite geometry, positive sizes, uniqueness, fact references, and endpoints in stable field order.
+- [x] Run `npm test`; expect all validator tests to pass. Run `npm run build`; expect success.
+- [x] Commit with `git add package.json tsconfig.json scripts/verify src/scene && git commit -m "feat: add versioned scene validation"`.
 
 ### Task 2: Source extraction and provenance
 
 **Files:** Create `src/scene/extract.ts`, `src/scene/extract.test.ts`.
 
-- [ ] Write failing tests for `A -> B: label`, heading and bullet attachment, exact sentence offsets, stable collision IDs, caps, and fallback warnings. Assert block labels, edge endpoints, and `[start,end)` slices.
-- [ ] Run `npm test -- --test-name-pattern="plain text"`; expect failure because `extractScene` is missing.
-- [ ] Implement `extractScene(source, audience): ExtractionResult`. Parse arrow lines first, Markdown headings and bullets second, sentence facts third, then repeated backtick/capitalized terms. Preserve source order, enforce limits, and return the three-block fallback when fewer than two blocks or no edge exists.
-- [ ] Write failing OpenAPI tests for tagged operations, missing tags, malformed path entries, operation caps, and a valid document with no operations.
-- [ ] Run `npm test -- --test-name-pattern="OpenAPI"`; expect the first OpenAPI assertion to fail.
-- [ ] Add OpenAPI JSON detection and extraction. Create API, tag, and operation blocks; connect them in source order; derive facts from summary/description and terms from tags, parameters, and `$ref` schema tails. Skip unsupported values and fall back with a warning when no operations exist.
-- [ ] Run `npm test`; expect extraction and validation tests to pass.
-- [ ] Commit with `git add src/scene && git commit -m "feat: extract source-grounded scenes"`.
+- [x] Write failing tests for `A -> B: label`, heading and bullet attachment, exact sentence offsets, stable collision IDs, caps, and fallback warnings. Assert block labels, edge endpoints, and `[start,end)` slices.
+- [x] Run `npm test -- --test-name-pattern="plain text"`; expect failure because `extractScene` is missing.
+- [x] Implement `extractScene(source, audience): ExtractionResult`. Parse arrow lines first, Markdown headings and bullets second, sentence facts third, then repeated backtick/capitalized terms. Preserve source order, enforce limits, and return the three-block fallback when fewer than two blocks or no edge exists.
+- [x] Write failing OpenAPI tests for tagged operations, missing tags, malformed path entries, operation caps, and a valid document with no operations.
+- [x] Run `npm test -- --test-name-pattern="OpenAPI"`; expect the first OpenAPI assertion to fail.
+- [x] Add OpenAPI JSON detection and extraction. Create API, tag, and operation blocks; connect them in source order; derive facts from summary/description and terms from tags, parameters, and `$ref` schema tails. Skip unsupported values and fall back with a warning when no operations exist.
+- [x] Run `npm test`; expect extraction and validation tests to pass.
+- [x] Commit with `git add src/scene && git commit -m "feat: extract source-grounded scenes"`.
 
 ### Task 3: Architecture and sequence layouts
 
 **Files:** Create `src/scene/layout.ts`, `src/scene/layout.test.ts`.
 
-- [ ] Write failing tests proving architecture columns follow block kinds, sequence participants follow first graph appearance, cycles do not duplicate participants, message order follows edge order, and repeated calls return identical coordinates.
-- [ ] Run `npm test -- --test-name-pattern="layout"`; expect failure because layout functions are missing.
-- [ ] Implement `layoutScene(document, view)` as a pure function. Architecture uses three bounded columns and fixed card sizes. Sequence places participants across the top and assigns `order` to edge copies while retaining semantic IDs. Clamp all coordinates to the 1280 by 780 canvas.
-- [ ] Run `npm test`; expect all tests to pass.
-- [ ] Commit with `git add src/scene && git commit -m "feat: add architecture and sequence layouts"`.
+- [x] Write failing tests proving architecture columns follow block kinds, sequence participants follow first graph appearance, cycles do not duplicate participants, message order follows edge order, and repeated calls return identical coordinates.
+- [x] Run `npm test -- --test-name-pattern="layout"`; expect failure because layout functions are missing.
+- [x] Implement `layoutScene(document, view)` as a pure function. Architecture uses three bounded columns and fixed card sizes. Sequence places participants across the top and assigns `order` to edge copies while retaining semantic IDs. Clamp all coordinates to the 1280 by 780 canvas.
+- [x] Run `npm test`; expect all tests to pass.
+- [x] Commit with `git add src/scene && git commit -m "feat: add architecture and sequence layouts"`.
 
 ### Task 4: Shared renderer and exports
 
 **Files:** Create `src/components/SceneSvg.tsx`, `src/scene/exports.tsx`, `src/scene/exports.test.ts`; modify `src/sceneStyles.ts`.
 
-- [ ] Write failing tests for standalone HTML escaping, embedded schema-v1 JSON, mode and selection hooks, SVG namespace and embedded styles, and the absence of scripts in SVG.
-- [ ] Run `npm test -- --test-name-pattern="export"`; expect failure because serializers are missing.
-- [ ] Move the SVG renderer out of `App.tsx`. Render architecture with side-anchored curves and sequence with participants, lifelines, and ordered messages. Apply `data-block-id`, `data-edge-id`, and evidence classes. Keep `foreignObject` for wrapped card text.
-- [ ] Implement `standaloneHtml(document, options)` with escaped static markup, a JSON script whose `<` characters are Unicode escaped, and a dependency-free inline controller for view switching, keyboard activation, selection, and inspector updates. Implement `sceneSvg(document, options)` by rendering the shared component, adding `xmlns`, and embedding `sceneCss` without scripts.
-- [ ] Run `npm test`; expect all tests to pass. Run `npm run build`; expect success.
-- [ ] Commit with `git add src/components src/scene src/sceneStyles.ts && git commit -m "feat: add shared interactive exports"`.
+- [x] Write failing tests for standalone HTML escaping, embedded schema-v1 JSON, mode and selection hooks, SVG namespace and embedded styles, and the absence of scripts in SVG.
+- [x] Run `npm test -- --test-name-pattern="export"`; expect failure because serializers are missing.
+- [x] Move the SVG renderer out of `App.tsx`. Render architecture with side-anchored curves and sequence with participants, lifelines, and ordered messages. Apply `data-block-id`, `data-edge-id`, and evidence classes. Keep `foreignObject` for wrapped card text.
+- [x] Implement `standaloneHtml(document, options)` with escaped static markup, a JSON script whose `<` characters are Unicode escaped, and a dependency-free inline controller for view switching, keyboard activation, selection, and inspector updates. Implement `sceneSvg(document, options)` by rendering the shared component, adding `xmlns`, and embedding `sceneCss` without scripts.
+- [x] Run `npm test`; expect all tests to pass. Run `npm run build`; expect success.
+- [x] Commit with `git add src/components src/scene src/sceneStyles.ts && git commit -m "feat: add shared interactive exports"`.
 
 ### Task 5: Studio round trip, editing, and evidence interaction
 
 **Files:** Modify `src/App.tsx`, `src/index.css`.
 
-- [ ] Add a failing pure state test in `src/scene/edit.test.ts` for immutable block and edge edits and view-only relayout preserving IDs. Run it and expect missing helpers.
-- [ ] Add minimal edit helpers to `src/scene/types.ts`, rerun the focused test, and expect pass.
-- [ ] Replace the fixed studio state with a generated or imported `SceneDocument`. Add Architecture, Sequence, and Review controls; Import JSON; Export HTML, JSON, and SVG; selected block/edge editing; extraction warnings; import errors; and an accessible status region.
-- [ ] On valid import, replace the source and document. On invalid import, retain both. Track manual edits. Before source regeneration after edits, use `window.confirm`; cancellation restores the prior source text and scene. Audience updates subtitle copy without regenerating IDs. Review dims elements with no `factIds`.
-- [ ] Evidence buttons call `textarea.setSelectionRange(start,end)` and focus the source. Facts without usable offsets remain readable but do not change the selection.
-- [ ] Run `npm test` and `npm run build`; expect success.
-- [ ] Commit with `git commit -am "feat: add scene import editing and provenance"`.
+- [x] Add a failing pure state test in `src/scene/edit.test.ts` for immutable block and edge edits and view-only relayout preserving IDs. Run it and expect missing helpers.
+- [x] Add minimal edit helpers to `src/scene/types.ts`, rerun the focused test, and expect pass.
+- [x] Replace the fixed studio state with a generated or imported `SceneDocument`. Add Architecture, Sequence, and Review controls; Import JSON; Export HTML, JSON, and SVG; selected block/edge editing; extraction warnings; import errors; and an accessible status region.
+- [x] On valid import, replace the source and document. On invalid import, retain both. Track manual edits. Before source regeneration after edits, use `window.confirm`; cancellation restores the prior source text and scene. Audience updates subtitle copy without regenerating IDs. Review dims elements with no `factIds`.
+- [x] Evidence buttons call `textarea.setSelectionRange(start,end)` and focus the source. Facts without usable offsets remain readable but do not change the selection.
+- [x] Run `npm test` and `npm run build`; expect success.
+- [x] Commit with `git commit -am "feat: add scene import editing and provenance"`.
 
 ### Task 6: Documentation and end-to-end verification
 
 **Files:** Modify `README.md`, `CHANGELOG.md`, `AGENTS.md`; update plan checkboxes.
 
-- [ ] Update the README jobs, limitations, export descriptions, and code layout to match the delivered implementation. Document OpenAPI JSON, the text arrow grammar, JSON round trips, offline HTML, and static SVG.
-- [ ] Record all seven capabilities under `CHANGELOG.md` Unreleased. Update `AGENTS.md` with the new module boundaries and test gate.
-- [ ] Start `npm run dev`, then verify in a browser: plain-text arrows create source-specific nodes; OpenAPI JSON creates tag and operation nodes; evidence selection highlights text; edits persist across view changes; invalid import is non-destructive; valid JSON reimports; architecture and sequence differ; HTML interactions work offline; SVG opens and contains no script.
-- [ ] Run `./scripts/verify`; expect Node tests to pass followed by a successful TypeScript and Vite production build.
-- [ ] Mark every completed checkbox in this plan and commit with `git commit -am "docs: document structured scene workflow"`.
+- [x] Update the README jobs, limitations, export descriptions, and code layout to match the delivered implementation. Document OpenAPI JSON, the text arrow grammar, JSON round trips, offline HTML, and static SVG.
+- [x] Record all seven capabilities under `CHANGELOG.md` Unreleased. Update `AGENTS.md` with the new module boundaries and test gate.
+- [x] Start `npm run dev`, then verify in a browser: plain-text arrows create source-specific nodes; OpenAPI JSON creates tag and operation nodes; evidence selection highlights text; edits persist across view changes; invalid import is non-destructive; valid JSON reimports; architecture and sequence differ; HTML interactions work offline; SVG opens and contains no script.
+- [x] Run `./scripts/verify`; expect Node tests to pass followed by a successful TypeScript and Vite production build.
+- [x] Mark every completed checkbox in this plan and commit with `git commit -am "docs: document structured scene workflow"`.
 
 ## Completion criteria
 
