@@ -8,7 +8,7 @@ export function SceneSvg({ scene, selectedId, review, onSelect }: Props) {
   return <svg viewBox="0 0 1280 780" role="group" aria-label={`${scene.title} ${scene.view} scene`}>
     <style>{sceneCss}</style><defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="4" orient="auto"><path d="M1,1 L7,4 L1,7 Z" fill={T.accent}/></marker></defs>
     <rect width="1280" height="780" fill={T.bg}/><text x="48" y="58" className="scene-title">{short(scene.title, 64)}</text><text x="48" y="84" className="scene-summary">{short(scene.summary, 110)}</text>
-    {scene.view === "sequence" ? <Sequence scene={scene} selectedId={selectedId} review={review} onSelect={onSelect}/> : <Architecture scene={scene} byId={byId} selectedId={selectedId} review={review} onSelect={onSelect}/>} 
+    {scene.view === "sequence" ? <Sequence scene={scene} selectedId={selectedId} review={review} onSelect={onSelect}/> : <Architecture scene={scene} byId={byId} selectedId={selectedId} review={review} onSelect={onSelect}/>}
   </svg>;
 }
 
