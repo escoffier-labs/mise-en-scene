@@ -18,6 +18,14 @@ test("plain text fallback is explicit and stable", () => {
   assert.match(a.document.warnings[0], /fallback/i);
 });
 
+test("Markdown bullets attach to their nearest heading", () => {
+  const result = extractScene("# API\n- Accepts requests\n# Database\n- Stores rows\nAPI -> Database: writes", "engineer");
+  const api = result.document.blocks.find((block) => block.label === "API")!;
+  const database = result.document.blocks.find((block) => block.label === "Database")!;
+  assert.ok(api.factIds.some((id) => result.document.facts.find((fact) => fact.id === id)?.text === "Accepts requests"));
+  assert.ok(database.factIds.some((id) => result.document.facts.find((fact) => fact.id === id)?.text === "Stores rows"));
+});
+
 test("OpenAPI JSON creates tags and operations", () => {
   const source = JSON.stringify({ openapi: "3.1.0", info: { title: "Pet API" }, paths: { "/pets": { get: { tags: ["Pets"], summary: "List pets" } } } });
   const result = extractScene(source, "customer");

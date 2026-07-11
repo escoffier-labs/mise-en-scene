@@ -43,11 +43,12 @@ function extractText(source: string, audience: Audience): ExtractionResult {
     document.edges.push({ id: slugId(`${from.id}-${to.id}-${match[3]}`, usedEdges), from: from.id, to: to.id, label: match[3].trim(), factIds: [fact.id] });
   }
   let current: SceneBlock | undefined;
-  for (const match of source.matchAll(/^(#{1,6})\s+(.+)$/gm)) current = addBlock(match[2], inferKind(match[2]));
-  for (const match of source.matchAll(/^\s*[-*]\s+(.+)$/gm)) {
-    if (!current || document.facts.length >= SCENE_LIMITS.facts) continue;
-    const start = match.index! + match[0].indexOf(match[1]);
-    const fact: SceneFact = { id: slugId(`fact-${match[1]}`, usedFacts), text: match[1], start, end: start + match[1].length };
+  for (const match of source.matchAll(/^(?:#{1,6}\s+(.+)|\s*[-*]\s+(.+))$/gm)) {
+    if (match[1]) { current = addBlock(match[1], inferKind(match[1])); continue; }
+    const bullet = match[2];
+    if (!current || !bullet || document.facts.length >= SCENE_LIMITS.facts) continue;
+    const start = match.index! + match[0].indexOf(bullet);
+    const fact: SceneFact = { id: slugId(`fact-${bullet}`, usedFacts), text: bullet, start, end: start + bullet.length };
     document.facts.push(fact); current.factIds.push(fact.id); current.detail = fact.text;
   }
   for (const match of source.matchAll(/[^\n.!?][^.!?]*(?:[.!?]|$)/g)) {
