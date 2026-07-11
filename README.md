@@ -39,10 +39,10 @@ npm install && npm run dev
 
 | | Job | What you get |
 |---|---|---|
-| **Ingest** | Source material | Repos, OpenAPI, README, incident notes |
-| **Extract** | Source-grounded facts | Systems, actors, flows, terms with provenance |
-| **Stage** | Interactive scene | Audience modes and click targets |
-| **Export** | Self-contained HTML/SVG | What you preview is what you ship |
+| **Ingest** | Source material | Plain text, relationship lines, OpenAPI JSON |
+| **Extract** | Source-grounded facts | Systems, actors, flows, terms, and evidence ranges |
+| **Stage** | Interactive scene | Architecture and sequence views, editing, review |
+| **Export** | Portable artifacts | Interactive HTML, editable JSON, static SVG |
 
 <p align="center">
   <img src="docs/assets/mise-en-scene-studio.png" alt="Mise en Scene studio" width="760">
@@ -51,10 +51,32 @@ npm install && npm run dev
 <p align="center"><em>Studio on the left, scene on the right. Standalone export uses the same SceneSvg component.</em></p>
 
 
+## Source grammar
+
+Paste prose, Markdown, OpenAPI JSON, or explicit relationships:
+
+```text
+Browser -> API: sends request
+API -> Database: reads rows
+```
+
+Relationship lines produce deterministic blocks, edges, and source evidence.
+OpenAPI JSON produces API, tag, and operation elements. When the source does not
+contain a usable relationship, the studio clearly marks its fallback scene.
+
+JSON exports use a validated, versioned schema and can be imported for another
+editing session. HTML exports work offline and retain view switching and element
+inspection. SVG exports contain the active view and no scripts.
+
 ## Code layout
 
-- `src/App.tsx`: scene model, extraction heuristics, the `SceneSvg` component,
-  and the app shell.
+- `src/App.tsx`: studio state, import, editing, provenance, and export actions.
+- `src/components/SceneSvg.tsx`: shared architecture and sequence renderer.
+- `src/scene/types.ts`: versioned scene model and editing helpers.
+- `src/scene/extract.ts`: plain-text and OpenAPI JSON extraction.
+- `src/scene/layout.ts`: deterministic architecture and sequence layouts.
+- `src/scene/validate.ts`: imported JSON validation.
+- `src/scene/exports.tsx`: standalone HTML and SVG serialization.
 - `src/sceneStyles.ts`: styles for the SVG internals (injected inside the SVG)
   plus the page chrome for the exported artifact.
 - `src/index.css`: app shell layout and controls.
@@ -80,17 +102,17 @@ Mise en Scene is an early working spike, not a finished product.
 It is not:
 
 - a hosted service or an account-gated SaaS (it runs in your browser)
-- a full repo or API crawler yet (ingestion is local text heuristics for now)
-- a screenshot or recorded-walkthrough exporter yet (those export targets are
-  planned, not implemented)
+- a full repository crawler (ingestion remains pasted, browser-local input)
+- an OpenAPI YAML parser (paste JSON for structured OpenAPI extraction)
+- a screenshot or recorded-walkthrough exporter
 - a replacement for hand-authored long-form docs
 
 ## Status
 
-This is an early working spike. The studio, scene model, audience modes, and the
-standalone HTML export work today. Not implemented yet: screenshot and
-recorded-walkthrough export targets, and any real ingestion beyond the local
-text heuristics.
+This is an early working product. Source-derived scenes, evidence inspection,
+architecture and sequence views, JSON round trips, editing, and HTML/SVG export
+work today. Repository crawling, OpenAPI YAML, screenshots, and recorded
+walkthroughs are not implemented.
 
 ## Naming
 

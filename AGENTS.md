@@ -7,11 +7,11 @@ Before reporting any change complete, run:
 ./scripts/verify
 ```
 
-It runs `npm run build` (`tsc -b && vite build`), the only gate; there are no tests or lint scripts yet. Report the actual command output. If it fails, report the failure verbatim and do not claim success. Requires Node >= 22.
+It runs `npm test` followed by `npm run build` (`tsc -b && vite build`). Report the actual command output. If it fails, report the failure verbatim and do not claim success. Requires Node >= 22.
 
 ## Project Shape
 - Vite + React 19 + TypeScript single-page app: the Mise en Scene studio, served at app.mise-en-scene.escoffierlabs.dev. The marketing site is a separate repo (mise-en-scene-site) at mise-en-scene.escoffierlabs.dev.
-- `src/App.tsx` holds the scene model, extraction heuristics, the `SceneSvg` component, and the app shell. The standalone HTML export renders the same `SceneSvg` via `renderToStaticMarkup`, so exports always match the live app; keep that single-source property when touching rendering.
+- `src/App.tsx` holds studio state and interactions. `src/scene/` owns the versioned model, validation, extraction, layouts, and exports. `src/components/SceneSvg.tsx` is the shared renderer. Standalone exports render the same component via `renderToStaticMarkup`; keep that single-source property.
 - `src/sceneStyles.ts`: styles for the SVG internals (injected inside the SVG) plus page chrome for the exported artifact. `src/index.css`: app shell layout and controls.
 - Long text inside SVG nodes uses `foreignObject` + line-clamp to avoid overflow; do not replace with raw `<text>` elements.
 
