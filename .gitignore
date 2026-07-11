@@ -49,6 +49,8 @@ memory/handoff-inbox/
 .brigade/chat-memory-sweeps/
 .brigade/work/
 .brigade/mcp/
+memory/outcome/
+.graphtrail/
 # .brigade/mcp.json is the shared canonical MCP server catalog: keep it tracked.
 !.brigade/mcp.json
 
