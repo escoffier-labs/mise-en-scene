@@ -1,9 +1,11 @@
 import { useMemo, useRef, useState } from "react";
 import { SceneSvg } from "./components/SceneSvg";
 import { extractScene } from "./scene/extract";
-import { standaloneHtml, standaloneSvg } from "./scene/exports";
+import { standaloneHtml, standaloneSvg, standaloneWalkthrough } from "./scene/exports";
 import { layoutScene } from "./scene/layout";
 import { PNG_SCALE, SCENE_HEIGHT, SCENE_WIDTH, sizedSvg, svgToDataUrl } from "./scene/raster";
+import { stepSpotlight, walkthroughSteps } from "./scene/walkthrough";
+import { T } from "./sceneStyles";
 import { editBlock, editEdge, type Audience, type SceneDocument, type SceneView } from "./scene/types";
 import { validateSceneDocument } from "./scene/validate";
 
@@ -14,6 +16,11 @@ Checkout API -> Payment gateway: authorizes payment
 Checkout API -> Orders database: stores order`;
 
 type Selection = { type: "block" | "edge"; id: string } | null;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => { const img = new Image(); img.decoding = "async"; img.onload = () => resolve(img); img.onerror = () => reject(new Error("scene could not be rasterized")); img.src = src; });
+}
 
 export default function App() {
   const initial = useMemo(() => extractScene(localStorage.getItem("mise-source") || sampleSource, "engineer").document, []);
@@ -53,14 +60,33 @@ export default function App() {
   }
   async function exportPng() {
     try {
-      const img=new Image(); img.decoding="async";
-      await new Promise<void>((resolve,reject)=>{ img.onload=()=>resolve(); img.onerror=()=>reject(new Error("scene could not be rasterized")); img.src=svgToDataUrl(sizedSvg(standaloneSvg(scene,review))); });
+      const img=await loadImage(svgToDataUrl(sizedSvg(standaloneSvg(scene,review))));
       const canvas=globalThis.document.createElement("canvas"); canvas.width=SCENE_WIDTH*PNG_SCALE; canvas.height=SCENE_HEIGHT*PNG_SCALE;
       const ctx=canvas.getContext("2d"); if (!ctx) throw new Error("canvas is unavailable");
       ctx.scale(PNG_SCALE,PNG_SCALE); ctx.drawImage(img,0,0,SCENE_WIDTH,SCENE_HEIGHT);
       const blob=await new Promise<Blob|null>((resolve)=>canvas.toBlob(resolve,"image/png")); if (!blob) throw new Error("PNG encoding failed");
       saveBlob("mise-en-scene.png",blob); setNotice("mise-en-scene.png exported");
     } catch (error) { setNotice(`PNG export failed: ${error instanceof Error ? error.message : "unknown error"}`); }
+  }
+  async function recordWalkthrough() {
+    const Recorder=(globalThis as any).MediaRecorder;
+    const probe=globalThis.document.createElement("canvas");
+    if (typeof Recorder==="undefined" || typeof (probe as any).captureStream!=="function") { setNotice("Video recording is not supported in this browser"); return; }
+    const mime=["video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm"].find((t)=>Recorder.isTypeSupported?.(t)) || "video/webm";
+    try {
+      setNotice("Recording walkthrough...");
+      const steps=walkthroughSteps(scene);
+      const frames=await Promise.all(steps.map((step)=>loadImage(svgToDataUrl(sizedSvg(standaloneSvg(scene,false,stepSpotlight(step)))))));
+      const canvas=globalThis.document.createElement("canvas"); canvas.width=SCENE_WIDTH; canvas.height=SCENE_HEIGHT;
+      const ctx=canvas.getContext("2d"); if (!ctx) throw new Error("canvas is unavailable");
+      const stream=(canvas as any).captureStream(30); const recorder=new Recorder(stream,{mimeType:mime}); const chunks: Blob[]=[];
+      recorder.ondataavailable=(e:any)=>{ if (e.data?.size) chunks.push(e.data); };
+      const finished=new Promise<Blob>((resolve)=>{ recorder.onstop=()=>resolve(new Blob(chunks,{type:mime})); });
+      recorder.start();
+      for (const frame of frames) { ctx.fillStyle=T.bg; ctx.fillRect(0,0,SCENE_WIDTH,SCENE_HEIGHT); ctx.drawImage(frame,0,0,SCENE_WIDTH,SCENE_HEIGHT); await sleep(1500); }
+      recorder.stop();
+      saveBlob("mise-en-scene-walkthrough.webm",await finished); setNotice("mise-en-scene-walkthrough.webm recorded");
+    } catch (error) { setNotice(`Video recording failed: ${error instanceof Error ? error.message : "unknown error"}`); }
   }
   async function importFile(file?: File) {
     if (!file) return;
@@ -76,6 +102,8 @@ export default function App() {
         <button disabled={!canExport} onClick={()=>download("mise-en-scene.svg",standaloneSvg(scene,review),"image/svg+xml")}>Export SVG</button>
         <button disabled={!canExport} onClick={()=>void exportPng()}>Export PNG</button>
         <button disabled={!canExport} onClick={()=>download("mise-en-scene.json",JSON.stringify(scene,null,2),"application/json")}>Export JSON</button>
+        <button disabled={!canExport} onClick={()=>download("mise-en-scene-walkthrough.html",standaloneWalkthrough(scene),"text/html")}>Walkthrough</button>
+        <button disabled={!canExport} onClick={()=>void recordWalkthrough()}>Record video</button>
         <button className="primary" disabled={!canExport} onClick={()=>download("mise-en-scene.html",standaloneHtml(scene),"text/html")}>Export HTML</button>
       </div></header>
     <section className="workspace">

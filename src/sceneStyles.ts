@@ -140,6 +140,22 @@ export const sceneCss = `
   opacity: 0.22;
 }
 
+/* Walkthrough spotlight: applied by the animated HTML player and the video
+   recorder to focus one relationship at a time. Inert in the live studio. */
+.walk-dim {
+  opacity: 0.16;
+  transition: opacity 0.35s ease;
+}
+.walk-on {
+  opacity: 1;
+  transition: opacity 0.35s ease;
+}
+.walk-on path,
+.walk-on .card-rect {
+  stroke: ${T.accent};
+  stroke-width: 2.5;
+}
+
 .lifeline {
   stroke: ${T.hairlineStrong};
   stroke-width: 1;
