@@ -5,6 +5,7 @@ import { standaloneHtml, standaloneSvg, standaloneWalkthrough } from "./scene/ex
 import { layoutScene } from "./scene/layout";
 import { PNG_SCALE, SCENE_HEIGHT, SCENE_WIDTH, sizedSvg, svgToDataUrl } from "./scene/raster";
 import { stepSpotlight, walkthroughSteps } from "./scene/walkthrough";
+import { CRAWL_MAX_BYTES, CRAWL_MAX_FILES, isCrawlableFile, isIgnoredDir, isRemoteCandidate, parseRepoUrl, synthesizeSource, type CrawlFile, type RepoRef } from "./scene/crawl";
 import { T } from "./sceneStyles";
 import { editBlock, editEdge, type Audience, type SceneDocument, type SceneView } from "./scene/types";
 import { validateSceneDocument } from "./scene/validate";
@@ -22,6 +23,40 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => { const img = new Image(); img.decoding = "async"; img.onload = () => resolve(img); img.onerror = () => reject(new Error("scene could not be rasterized")); img.src = src; });
 }
 
+// Walk a File System Access directory handle, collecting crawlable text files
+// within the size and count caps and skipping vendored directories.
+async function readDirectory(dir: any, prefix = "", files: CrawlFile[] = []): Promise<CrawlFile[]> {
+  for await (const entry of dir.values()) {
+    if (files.length >= CRAWL_MAX_FILES) break;
+    const path = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.kind === "directory") { if (!isIgnoredDir(entry.name)) await readDirectory(entry, path, files); }
+    else if (isCrawlableFile(path)) { const file = await entry.getFile(); if (file.size <= CRAWL_MAX_BYTES) files.push({ path, text: await file.text() }); }
+  }
+  return files;
+}
+
+// Fetch a public GitHub repo's docs and specs from the browser: two API calls
+// (default branch, then the recursive tree) plus raw CDN reads for candidates.
+async function fetchRepoFiles(ref: RepoRef): Promise<CrawlFile[]> {
+  const api = `https://api.github.com/repos/${ref.owner}/${ref.repo}`;
+  let branch = ref.branch ?? "";
+  if (!branch) {
+    const meta = await fetch(api);
+    if (!meta.ok) throw new Error(meta.status === 403 ? "GitHub API rate limit reached" : `repository not found (${meta.status})`);
+    branch = String((await meta.json()).default_branch || "main");
+  }
+  const treeRes = await fetch(`${api}/git/trees/${encodeURIComponent(branch)}?recursive=1`);
+  if (!treeRes.ok) throw new Error(`could not read repository tree (${treeRes.status})`);
+  const tree = ((await treeRes.json()).tree || []) as any[];
+  const paths = tree.filter((node) => node.type === "blob" && isRemoteCandidate(node.path) && (node.size ?? 0) <= CRAWL_MAX_BYTES).map((node) => node.path as string).slice(0, 80);
+  const files: CrawlFile[] = [];
+  for (const path of paths) {
+    const raw = await fetch(`https://raw.githubusercontent.com/${ref.owner}/${ref.repo}/${branch}/${path.split("/").map(encodeURIComponent).join("/")}`);
+    if (raw.ok) files.push({ path, text: await raw.text() });
+  }
+  return files;
+}
+
 export default function App() {
   const initial = useMemo(() => extractScene(localStorage.getItem("mise-source") || sampleSource, "engineer").document, []);
   const [document, setDocument] = useState<SceneDocument>(initial);
@@ -36,11 +71,38 @@ export default function App() {
   const selectedFacts = selected ? document.facts.filter((fact) => selected.factIds.includes(fact.id)) : [];
 
   function regenerate(next: string, audience = document.audience) {
-    if (dirty && !window.confirm("Regenerate the scene and discard manual edits?")) return;
+    if (dirty && !window.confirm("Regenerate the scene and discard manual edits?")) return false;
     const result = extractScene(next, audience);
     result.document.view = document.view;
     setSource(next); setDocument(result.document); setDirty(false); setSelection({ type: "block", id: result.document.blocks[0]?.id });
     localStorage.setItem("mise-source", next); setNotice(result.document.warnings[0] || `Extracted ${result.document.blocks.length} elements`);
+    return true;
+  }
+  function applyCrawl(files: CrawlFile[]) {
+    const result = synthesizeSource(files);
+    if (!result.source.trim()) { setNotice(result.warnings[0] || "No usable source found in the repository."); return; }
+    if (regenerate(result.source)) setNotice(result.warnings.length ? `${result.summary} ${result.warnings[0]}` : result.summary);
+  }
+  async function openFolder() {
+    const picker = (globalThis as any).showDirectoryPicker;
+    if (typeof picker !== "function") { openFolderFallback(); return; }
+    try { setNotice("Reading folder..."); applyCrawl(await readDirectory(await picker.call(globalThis, { mode: "read" }))); }
+    catch (error) { if ((error as any)?.name === "AbortError") { setNotice("Ready"); return; } setNotice(`Folder crawl failed: ${error instanceof Error ? error.message : "unknown error"}`); }
+  }
+  function openFolderFallback() {
+    const input = globalThis.document.createElement("input"); input.type = "file"; (input as any).webkitdirectory = true; input.multiple = true;
+    input.onchange = async () => {
+      const files: CrawlFile[] = [];
+      for (const file of Array.from(input.files || [])) { if (files.length >= CRAWL_MAX_FILES) break; const path = (file as any).webkitRelativePath || file.name; if (isCrawlableFile(path) && file.size <= CRAWL_MAX_BYTES) files.push({ path, text: await file.text() }); }
+      applyCrawl(files);
+    };
+    input.click();
+  }
+  async function openRepoUrl() {
+    const input = window.prompt("GitHub repository URL or owner/repo"); if (!input) return;
+    const ref = parseRepoUrl(input); if (!ref) { setNotice("Could not parse that repository reference."); return; }
+    try { setNotice(`Fetching ${ref.owner}/${ref.repo}...`); applyCrawl(await fetchRepoFiles(ref)); }
+    catch (error) { setNotice(`Repository fetch failed: ${error instanceof Error ? error.message : "unknown error"}`); }
   }
 
   function setView(view: SceneView) { setDocument((current) => ({ ...current, view })); setNotice(`${view} view`); }
@@ -107,7 +169,7 @@ export default function App() {
         <button className="primary" disabled={!canExport} onClick={()=>download("mise-en-scene.html",standaloneHtml(scene),"text/html")}>Export HTML</button>
       </div></header>
     <section className="workspace">
-      <aside className="panel source-panel"><div className="panel-head"><h2>Source</h2><button className="small" onClick={()=>regenerate(sampleSource)}>Sample</button></div>
+      <aside className="panel source-panel"><div className="panel-head"><h2>Source</h2><div className="panel-head-actions"><button className="small" onClick={()=>void openFolder()}>Open folder</button><button className="small" onClick={()=>void openRepoUrl()}>From URL</button><button className="small" onClick={()=>regenerate(sampleSource)}>Sample</button></div></div>
         <label>Source material<textarea ref={sourceRef} value={source} onChange={(e)=>regenerate(e.target.value)} placeholder="Paste text, OpenAPI JSON, or A -> B: relationship lines"/></label>
         <label>Audience<select value={document.audience} onChange={(e)=>regenerate(source,e.target.value as Audience)}><option value="engineer">Engineer</option><option value="exec">Executive</option><option value="student">Student</option><option value="customer">Customer</option></select></label>
         <p className="source-meta">{document.source.kind === "openapi" ? "OpenAPI JSON" : "Plain text"} · {document.blocks.length} elements · {document.edges.length} relationships</p>
