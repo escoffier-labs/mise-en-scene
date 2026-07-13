@@ -39,10 +39,10 @@ npm install && npm run dev
 
 | | Job | What you get |
 |---|---|---|
-| **Ingest** | Source material | Plain text, relationship lines, OpenAPI JSON |
+| **Ingest** | Source material | Pasted text, a local folder, a public repo, OpenAPI JSON or YAML |
 | **Extract** | Source-grounded facts | Systems, actors, flows, terms, and evidence ranges |
 | **Stage** | Interactive scene | Architecture and sequence views, editing, review |
-| **Export** | Portable artifacts | Interactive HTML, editable JSON, static SVG |
+| **Export** | Portable artifacts | Interactive HTML, JSON, SVG, PNG, and a walkthrough (HTML or WebM) |
 
 <p align="center">
   <img src="docs/assets/mise-en-scene-studio.png" alt="Mise en Scene studio" width="760">
@@ -53,7 +53,7 @@ npm install && npm run dev
 
 ## Source grammar
 
-Paste prose, Markdown, OpenAPI JSON, or explicit relationships:
+Paste prose, Markdown, OpenAPI JSON or YAML, or explicit relationships:
 
 ```text
 Browser -> API: sends request
@@ -61,22 +61,45 @@ API -> Database: reads rows
 ```
 
 Relationship lines produce deterministic blocks, edges, and source evidence.
-OpenAPI JSON produces API, tag, and operation elements. When the source does not
-contain a usable relationship, the studio clearly marks its fallback scene.
+OpenAPI JSON and YAML produce API, tag, and operation elements. When the source
+does not contain a usable relationship, the studio clearly marks its fallback
+scene.
+
+## Ingest a repository
+
+Beyond pasting, the studio can pull source material from a repo without a
+backend:
+
+- **Open folder** reads a local repository in the browser (File System Access
+  API, with a directory-upload fallback). It picks the most informative file, an
+  OpenAPI spec when present, otherwise the README or the doc with the strongest
+  relationship signal, and converts an embedded Mermaid diagram into the arrow
+  grammar.
+- **From URL** fetches a public GitHub repository's docs and specs directly from
+  the browser (two API calls plus raw file reads), then extracts the same way.
+
+## Exports
 
 JSON exports use a validated, versioned schema and can be imported for another
 editing session. HTML exports work offline and retain view switching and element
-inspection. SVG exports contain the active view and no scripts.
+inspection. SVG exports contain the active view and no scripts. PNG exports
+rasterize the active view. The walkthrough export steps through the scene one
+relationship at a time, as a self-contained animated HTML file or a recorded
+WebM video.
 
 ## Code layout
 
 - `src/App.tsx`: studio state, import, editing, provenance, and export actions.
 - `src/components/SceneSvg.tsx`: shared architecture and sequence renderer.
 - `src/scene/types.ts`: versioned scene model and editing helpers.
-- `src/scene/extract.ts`: plain-text and OpenAPI JSON extraction.
+- `src/scene/extract.ts`: plain-text and OpenAPI (JSON and YAML) extraction.
+- `src/scene/yaml.ts`: dependency-free YAML parser scoped to the OpenAPI subset.
+- `src/scene/crawl.ts`: repository crawling, file selection, and Mermaid conversion.
 - `src/scene/layout.ts`: deterministic architecture and sequence layouts.
 - `src/scene/validate.ts`: imported JSON validation.
-- `src/scene/exports.tsx`: standalone HTML and SVG serialization.
+- `src/scene/exports.tsx`: standalone HTML, SVG, and walkthrough serialization.
+- `src/scene/raster.ts`: SVG-to-PNG raster helpers.
+- `src/scene/walkthrough.ts`: the shared tour model for the walkthrough exports.
 - `src/sceneStyles.ts`: styles for the SVG internals (injected inside the SVG)
   plus the page chrome for the exported artifact.
 - `src/index.css`: app shell layout and controls.
@@ -102,17 +125,21 @@ Mise en Scene is an early working spike, not a finished product.
 It is not:
 
 - a hosted service or an account-gated SaaS (it runs in your browser)
-- a full repository crawler (ingestion remains pasted, browser-local input)
-- an OpenAPI YAML parser (paste JSON for structured OpenAPI extraction)
-- a screenshot or recorded-walkthrough exporter
+- a server-side crawler (repository ingestion happens locally in the browser)
+- a full YAML parser (OpenAPI YAML is parsed as a documented subset; malformed
+  or exotic YAML falls back to plain-text extraction)
 - a replacement for hand-authored long-form docs
 
 ## Status
 
 This is an early working product. Source-derived scenes, evidence inspection,
-architecture and sequence views, JSON round trips, editing, and HTML/SVG export
-work today. Repository crawling, OpenAPI YAML, screenshots, and recorded
-walkthroughs are not implemented.
+architecture and sequence views, JSON round trips, editing, repository crawling
+(local folders and public repos), OpenAPI JSON and YAML, and HTML, SVG, JSON,
+PNG, and walkthrough exports work today. Repository crawling and OpenAPI YAML run
+entirely in the browser. PNG and walkthrough exports rasterize the scene, so they
+depend on browser support for `foreignObject` rasterization (Chromium and
+Firefox); video recording uses `MediaRecorder` and falls back to a clear notice
+where unsupported.
 
 ## Naming
 
