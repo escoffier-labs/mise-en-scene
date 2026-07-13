@@ -3,6 +3,7 @@ import { SceneSvg } from "./components/SceneSvg";
 import { extractScene } from "./scene/extract";
 import { standaloneHtml, standaloneSvg } from "./scene/exports";
 import { layoutScene } from "./scene/layout";
+import { PNG_SCALE, SCENE_HEIGHT, SCENE_WIDTH, sizedSvg, svgToDataUrl } from "./scene/raster";
 import { editBlock, editEdge, type Audience, type SceneDocument, type SceneView } from "./scene/types";
 import { validateSceneDocument } from "./scene/validate";
 
@@ -43,9 +44,23 @@ export default function App() {
     setDirty(true); setNotice("Manual edits not yet exported");
   }
   function chooseFact(start: number, end: number) { if (start < 0 || end < start) return; sourceRef.current?.focus(); sourceRef.current?.setSelectionRange(start, end); }
+  function saveBlob(filename: string, blob: Blob) {
+    const url=URL.createObjectURL(blob); const link=globalThis.document.createElement("a"); link.href=url; link.download=filename; link.click(); URL.revokeObjectURL(url);
+  }
   function download(filename: string, content: string, type: string) {
-    try { const url=URL.createObjectURL(new Blob([content],{type})); const link=globalThis.document.createElement("a"); link.href=url; link.download=filename; link.click(); URL.revokeObjectURL(url); setNotice(`${filename} exported`); }
+    try { saveBlob(filename, new Blob([content],{type})); setNotice(`${filename} exported`); }
     catch (error) { setNotice(`Export failed: ${error instanceof Error ? error.message : "unknown error"}`); }
+  }
+  async function exportPng() {
+    try {
+      const img=new Image(); img.decoding="async";
+      await new Promise<void>((resolve,reject)=>{ img.onload=()=>resolve(); img.onerror=()=>reject(new Error("scene could not be rasterized")); img.src=svgToDataUrl(sizedSvg(standaloneSvg(scene,review))); });
+      const canvas=globalThis.document.createElement("canvas"); canvas.width=SCENE_WIDTH*PNG_SCALE; canvas.height=SCENE_HEIGHT*PNG_SCALE;
+      const ctx=canvas.getContext("2d"); if (!ctx) throw new Error("canvas is unavailable");
+      ctx.scale(PNG_SCALE,PNG_SCALE); ctx.drawImage(img,0,0,SCENE_WIDTH,SCENE_HEIGHT);
+      const blob=await new Promise<Blob|null>((resolve)=>canvas.toBlob(resolve,"image/png")); if (!blob) throw new Error("PNG encoding failed");
+      saveBlob("mise-en-scene.png",blob); setNotice("mise-en-scene.png exported");
+    } catch (error) { setNotice(`PNG export failed: ${error instanceof Error ? error.message : "unknown error"}`); }
   }
   async function importFile(file?: File) {
     if (!file) return;
@@ -59,6 +74,7 @@ export default function App() {
       <div className="actions" aria-label="Artifact actions"><span className="export-status" role="status" aria-live="polite">{notice}</span>
         <label className="file-button">Import JSON<input type="file" accept="application/json,.json" onChange={(e)=>void importFile(e.target.files?.[0])}/></label>
         <button disabled={!canExport} onClick={()=>download("mise-en-scene.svg",standaloneSvg(scene,review),"image/svg+xml")}>Export SVG</button>
+        <button disabled={!canExport} onClick={()=>void exportPng()}>Export PNG</button>
         <button disabled={!canExport} onClick={()=>download("mise-en-scene.json",JSON.stringify(scene,null,2),"application/json")}>Export JSON</button>
         <button className="primary" disabled={!canExport} onClick={()=>download("mise-en-scene.html",standaloneHtml(scene),"text/html")}>Export HTML</button>
       </div></header>
