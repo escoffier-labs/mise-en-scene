@@ -140,22 +140,6 @@ export const sceneCss = `
   opacity: 0.22;
 }
 
-/* Walkthrough spotlight: applied by the animated HTML player and the video
-   recorder to focus one relationship at a time. Inert in the live studio. */
-.walk-dim {
-  opacity: 0.16;
-  transition: opacity 0.35s ease;
-}
-.walk-on {
-  opacity: 1;
-  transition: opacity 0.35s ease;
-}
-.walk-on path,
-.walk-on .card-rect {
-  stroke: ${T.accent};
-  stroke-width: 2.5;
-}
-
 .lifeline {
   stroke: ${T.hairlineStrong};
   stroke-width: 1;
@@ -252,6 +236,31 @@ export const sceneCss = `
   font-family: ${mono};
   font-size: 10.5px;
   line-height: 1.5;
+}
+
+/* Dimming overrides. These are compound and placed last so they win the
+   specificity tie against .scene-block.active / .flow.active (which pin opacity
+   to 1). "ungrounded" is the Review-evidence filter; "walk-*" is the spotlight
+   applied by the animated HTML player and the video recorder. Inert until a
+   class is set, so the live studio is unaffected. */
+.scene-block.ungrounded,
+.flow.ungrounded {
+  opacity: 0.22;
+}
+.scene-block.walk-dim,
+.flow.walk-dim {
+  opacity: 0.16;
+  transition: opacity 0.35s ease;
+}
+.scene-block.walk-on,
+.flow.walk-on {
+  opacity: 1;
+  transition: opacity 0.35s ease;
+}
+.walk-on path,
+.walk-on .card-rect {
+  stroke: ${T.accent};
+  stroke-width: 2.5;
 }
 `;
 
