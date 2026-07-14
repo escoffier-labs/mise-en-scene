@@ -202,6 +202,12 @@ li {
   gap: 10px;
 }
 
+.panel-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 label {
   display: grid;
   gap: 6px;

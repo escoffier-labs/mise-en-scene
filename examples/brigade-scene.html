@@ -1,0 +1,557 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mise en Scene export</title><style>body{margin:0;background:#0d1014;color:#dde3ea;font:15px system-ui}main{max-width:1280px;margin:auto;padding:24px}.views button{margin:0 8px 12px 0;padding:8px 12px}.view[hidden]{display:none}.inspector{padding:12px;border:1px solid #2a323d}svg{width:100%;height:auto}</style></head><body><main><div class="views"><button data-view="architecture">Architecture</button><button data-view="sequence">Sequence</button></div><section class="view" data-view="architecture"><svg viewBox="0 0 1280 780" role="group" aria-label="Brigade orchestration architecture scene"><style>
+.scene-title {
+  fill: #dde3ea;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.scene-summary {
+  fill: #7d8590;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.scene-meta {
+  fill: #5c6672;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.zone-frame {
+  fill: none;
+  stroke: #232b34;
+  stroke-dasharray: 4 5;
+  stroke-width: 1;
+}
+
+.zone-title {
+  fill: #9aa4b2;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+
+.zone-desc {
+  fill: #5c6672;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+
+.scene-mode {
+  cursor: pointer;
+}
+
+.scene-mode rect {
+  fill: #11161c;
+  stroke: #2a323d;
+}
+
+.scene-mode:hover rect {
+  stroke: #43505e;
+}
+
+.scene-mode .scene-mode-active {
+  fill: #e0a45c;
+  stroke: #e0a45c;
+}
+
+.scene-mode-text {
+  fill: #9aa4b2;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.scene-mode-text-active {
+  fill: #0d1014;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.flow path {
+  fill: none;
+  stroke: #38424e;
+  stroke-width: 1.1;
+}
+
+.flow.dashed path {
+  stroke-dasharray: 4 5;
+}
+
+.flow {
+  opacity: 0.35;
+}
+
+.flow.active {
+  opacity: 1;
+}
+
+.flow.active path {
+  stroke: #e0a45c;
+  stroke-width: 1.4;
+}
+
+.selected path,
+.selected .card-rect {
+  stroke: #e0a45c;
+  stroke-width: 2.5;
+}
+
+.ungrounded {
+  opacity: 0.22;
+}
+
+.lifeline {
+  stroke: #2a323d;
+  stroke-width: 1;
+  stroke-dasharray: 4 5;
+}
+
+.flow-label {
+  fill: #7d8590;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  paint-order: stroke;
+  stroke: #0d1014;
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+
+.flow.active .flow-label {
+  fill: #e0a45c;
+}
+
+.scene-block {
+  cursor: pointer;
+  opacity: 0.35;
+}
+
+.scene-block.active,
+.scene-block.selected {
+  opacity: 1;
+}
+
+.card-rect {
+  fill: #121821;
+  stroke: #2a323d;
+  stroke-width: 1;
+}
+
+.scene-block:hover .card-rect {
+  stroke: #43505e;
+}
+
+.scene-block.selected .card-rect {
+  stroke: #e0a45c;
+  stroke-width: 1.3;
+}
+
+.card {
+  padding: 13px 16px;
+  pointer-events: none;
+}
+
+/* Sequence participant header: centered, wrapping name, no detail paragraph. */
+.participant {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 10px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.participant span {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #dde3ea;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.card h3 {
+  margin: 0 0 5px;
+  overflow: hidden;
+  color: #dde3ea;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card p {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: #9aa4b2;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.callout rect {
+  fill: #11161c;
+  stroke: #9c6f3a;
+  stroke-width: 1;
+}
+
+.callout-title {
+  fill: #e0a45c;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.callout p {
+  margin: 0;
+  color: #9aa4b2;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+/* Dimming and spotlight overrides. These are compound and placed last so they
+   win the specificity tie against .scene-block.active / .flow.active (which pin
+   opacity to 1). "ungrounded" is the Review-evidence filter; "walk-*" is the
+   walkthrough spotlight applied by the animated HTML player and the video
+   recorder. Inert until a class is set, so the live studio is unaffected. */
+.stage-camera {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+.scene-block {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.scene-block.ungrounded,
+.flow.ungrounded {
+  opacity: 0.22;
+}
+.scene-block.walk-dim,
+.flow.walk-dim {
+  opacity: 0.14;
+  transition: opacity 0.4s ease;
+}
+.scene-block.walk-on,
+.flow.walk-on {
+  opacity: 1;
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.scene-block.walk-on {
+  transform: scale(1.05);
+}
+.scene-block.walk-on .card-rect {
+  stroke: #e0a45c;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 6px 16px rgba(224, 164, 92, 0.35));
+}
+.flow.walk-on path {
+  stroke: #e0a45c;
+  stroke-width: 2.6;
+  filter: drop-shadow(0 0 6px rgba(224, 164, 92, 0.45));
+}
+.flow.walk-on .flow-label {
+  fill: #e0a45c;
+  font-weight: 600;
+}
+</style><defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="4" orient="auto"><path d="M1,1 L7,4 L1,7 Z" fill="#e0a45c"></path></marker></defs><rect width="1280" height="780" fill="#0d1014"></rect><text x="48" y="58" class="scene-title">Brigade orchestration</text><text x="48" y="84" class="scene-summary">A source-grounded view of systems and flows.</text><g data-edge-id="user-brigade-cli-runs-a-task" role="button" class="flow active   "><path d="M 288 196 C 358 196, 462 196, 532 196" marker-end="url(#arrow)"></path><text x="410" y="188" text-anchor="middle" class="flow-label">runs a task</text></g><g data-edge-id="brigade-cli-roster-loads-seats" role="button" class="flow active   "><path d="M 748 196 C 818 196, 462 270.2857142857143, 532 270.2857142857143" marker-end="url(#arrow)"></path><text x="640" y="225.14285714285714" text-anchor="middle" class="flow-label">loads seats</text></g><g data-edge-id="roster-coder-seat-assigns-the-work" role="button" class="flow active   "><path d="M 748 270.2857142857143 C 818 270.2857142857143, 462 344.57142857142856, 532 344.57142857142856" marker-end="url(#arrow)"></path><text x="640" y="299.42857142857144" text-anchor="middle" class="flow-label">assigns the work</text></g><g data-edge-id="coder-seat-mcp-sidecars-calls-tools" role="button" class="flow active   "><path d="M 748 344.57142857142856 C 818 344.57142857142856, 462 418.8571428571429, 532 418.8571428571429" marker-end="url(#arrow)"></path><text x="640" y="373.7142857142857" text-anchor="middle" class="flow-label">calls tools</text></g><g data-edge-id="coder-seat-reviewer-seat-submits-the-diff" role="button" class="flow active   "><path d="M 748 344.57142857142856 C 818 344.57142857142856, 462 493.14285714285717, 532 493.14285714285717" marker-end="url(#arrow)"></path><text x="640" y="410.8571428571429" text-anchor="middle" class="flow-label">submits the diff</text></g><g data-edge-id="reviewer-seat-verification-runs-checks" role="button" class="flow active   "><path d="M 748 493.14285714285717 C 818 493.14285714285717, 462 567.4285714285714, 532 567.4285714285714" marker-end="url(#arrow)"></path><text x="640" y="522.2857142857143" text-anchor="middle" class="flow-label">runs checks</text></g><g data-edge-id="verification-outcome-database-records-results" role="button" class="flow active   "><path d="M 748 567.4285714285714 C 818 567.4285714285714, 922 196, 992 196" marker-end="url(#arrow)"></path><text x="870" y="373.7142857142857" text-anchor="middle" class="flow-label">records results</text></g><g data-block-id="user" role="button" tabindex="0" aria-label="User" class="scene-block active   "><rect x="72" y="150" width="216" height="92" rx="10" class="card-rect"></rect><foreignObject x="72" y="150" width="216" height="92"><div class="card" xmlns="http://www.w3.org/1999/xhtml"><h3>User</h3><p>User -&gt; Brigade CLI: runs a task</p></div></foreignObject></g><g data-block-id="brigade-cli" role="button" tabindex="0" aria-label="Brigade CLI" class="scene-block active   "><rect x="532" y="150" width="216" height="92" rx="10" class="card-rect"></rect><foreignObject x="532" y="150" width="216" height="92"><div class="card" xmlns="http://www.w3.org/1999/xhtml"><h3>Brigade CLI</h3><p>User -&gt; Brigade CLI: runs a task</p></div></foreignObject></g><g data-block-id="roster" role="button" tabindex="0" aria-label="Roster" class="scene-block active   "><rect x="532" y="224.28571428571428" width="216" height="92" rx="10" class="card-rect"></rect><foreignObject x="532" y="224.28571428571428" width="216" height="92"><div class="card" xmlns="http://www.w3.org/1999/xhtml"><h3>Roster</h3><p>Brigade CLI -&gt; Roster: loads seats</p></div></foreignObject></g><g data-block-id="coder-seat" role="button" tabindex="0" aria-label="Coder seat" class="scene-block active   "><rect x="532" y="298.57142857142856" width="216" height="92" rx="10" class="card-rect"></rect><foreignObject x="532" y="298.57142857142856" width="216" height="92"><div class="card" xmlns="http://www.w3.org/1999/xhtml"><h3>Coder seat</h3><p>Roster -&gt; Coder seat: assigns the work</p></div></foreignObject></g><g data-block-id="mcp-sidecars" role="button" tabindex="0" aria-label="MCP sidecars" class="scene-block active   "><rect x="532" y="372.8571428571429" width="216" height="92" rx="10" class="card-rect"></rect><foreignObject x="532" y="372.8571428571429" width="216" height="92"><div class="card" xmlns="http://www.w3.org/1999/xhtml"><h3>MCP sidecars</h3><p>Coder seat -&gt; MCP sidecars: calls tools</p></div></foreignObject></g><g data-block-id="reviewer-seat" role="button" tabindex="0" aria-label="Reviewer seat" class="scene-block active   "><rect x="532" y="447.14285714285717" width="216" height="92" rx="10" class="card-rect"></rect><foreignObject x="532" y="447.14285714285717" width="216" height="92"><div class="card" xmlns="http://www.w3.org/1999/xhtml"><h3>Reviewer seat</h3><p>Coder seat -&gt; Reviewer seat: submits the diff</p></div></foreignObject></g><g data-block-id="verification" role="button" tabindex="0" aria-label="Verification" class="scene-block active   "><rect x="532" y="521.4285714285714" width="216" height="92" rx="10" class="card-rect"></rect><foreignObject x="532" y="521.4285714285714" width="216" height="92"><div class="card" xmlns="http://www.w3.org/1999/xhtml"><h3>Verification</h3><p>Reviewer seat -&gt; Verification: runs checks</p></div></foreignObject></g><g data-block-id="outcome-database" role="button" tabindex="0" aria-label="Outcome database" class="scene-block active   "><rect x="992" y="150" width="216" height="92" rx="10" class="card-rect"></rect><foreignObject x="992" y="150" width="216" height="92"><div class="card" xmlns="http://www.w3.org/1999/xhtml"><h3>Outcome database</h3><p>Verification -&gt; Outcome database: records results</p></div></foreignObject></g><g data-block-id="brigade-orchestration" role="button" tabindex="0" aria-label="Brigade orchestration" class="scene-block active   "><rect x="532" y="595.7142857142858" width="216" height="92" rx="10" class="card-rect"></rect><foreignObject x="532" y="595.7142857142858" width="216" height="92"><div class="card" xmlns="http://www.w3.org/1999/xhtml"><h3>Brigade orchestration</h3><p>Extracted from source material.</p></div></foreignObject></g></svg></section><section class="view" data-view="sequence"><svg viewBox="0 0 1280 780" role="group" aria-label="Brigade orchestration sequence scene"><style>
+.scene-title {
+  fill: #dde3ea;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.scene-summary {
+  fill: #7d8590;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.scene-meta {
+  fill: #5c6672;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.zone-frame {
+  fill: none;
+  stroke: #232b34;
+  stroke-dasharray: 4 5;
+  stroke-width: 1;
+}
+
+.zone-title {
+  fill: #9aa4b2;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+
+.zone-desc {
+  fill: #5c6672;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+
+.scene-mode {
+  cursor: pointer;
+}
+
+.scene-mode rect {
+  fill: #11161c;
+  stroke: #2a323d;
+}
+
+.scene-mode:hover rect {
+  stroke: #43505e;
+}
+
+.scene-mode .scene-mode-active {
+  fill: #e0a45c;
+  stroke: #e0a45c;
+}
+
+.scene-mode-text {
+  fill: #9aa4b2;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.scene-mode-text-active {
+  fill: #0d1014;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.flow path {
+  fill: none;
+  stroke: #38424e;
+  stroke-width: 1.1;
+}
+
+.flow.dashed path {
+  stroke-dasharray: 4 5;
+}
+
+.flow {
+  opacity: 0.35;
+}
+
+.flow.active {
+  opacity: 1;
+}
+
+.flow.active path {
+  stroke: #e0a45c;
+  stroke-width: 1.4;
+}
+
+.selected path,
+.selected .card-rect {
+  stroke: #e0a45c;
+  stroke-width: 2.5;
+}
+
+.ungrounded {
+  opacity: 0.22;
+}
+
+.lifeline {
+  stroke: #2a323d;
+  stroke-width: 1;
+  stroke-dasharray: 4 5;
+}
+
+.flow-label {
+  fill: #7d8590;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  paint-order: stroke;
+  stroke: #0d1014;
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+
+.flow.active .flow-label {
+  fill: #e0a45c;
+}
+
+.scene-block {
+  cursor: pointer;
+  opacity: 0.35;
+}
+
+.scene-block.active,
+.scene-block.selected {
+  opacity: 1;
+}
+
+.card-rect {
+  fill: #121821;
+  stroke: #2a323d;
+  stroke-width: 1;
+}
+
+.scene-block:hover .card-rect {
+  stroke: #43505e;
+}
+
+.scene-block.selected .card-rect {
+  stroke: #e0a45c;
+  stroke-width: 1.3;
+}
+
+.card {
+  padding: 13px 16px;
+  pointer-events: none;
+}
+
+/* Sequence participant header: centered, wrapping name, no detail paragraph. */
+.participant {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 10px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.participant span {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #dde3ea;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.card h3 {
+  margin: 0 0 5px;
+  overflow: hidden;
+  color: #dde3ea;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card p {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: #9aa4b2;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.callout rect {
+  fill: #11161c;
+  stroke: #9c6f3a;
+  stroke-width: 1;
+}
+
+.callout-title {
+  fill: #e0a45c;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.callout p {
+  margin: 0;
+  color: #9aa4b2;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+/* Dimming and spotlight overrides. These are compound and placed last so they
+   win the specificity tie against .scene-block.active / .flow.active (which pin
+   opacity to 1). "ungrounded" is the Review-evidence filter; "walk-*" is the
+   walkthrough spotlight applied by the animated HTML player and the video
+   recorder. Inert until a class is set, so the live studio is unaffected. */
+.stage-camera {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+.scene-block {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.scene-block.ungrounded,
+.flow.ungrounded {
+  opacity: 0.22;
+}
+.scene-block.walk-dim,
+.flow.walk-dim {
+  opacity: 0.14;
+  transition: opacity 0.4s ease;
+}
+.scene-block.walk-on,
+.flow.walk-on {
+  opacity: 1;
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.scene-block.walk-on {
+  transform: scale(1.05);
+}
+.scene-block.walk-on .card-rect {
+  stroke: #e0a45c;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 6px 16px rgba(224, 164, 92, 0.35));
+}
+.flow.walk-on path {
+  stroke: #e0a45c;
+  stroke-width: 2.6;
+  filter: drop-shadow(0 0 6px rgba(224, 164, 92, 0.45));
+}
+.flow.walk-on .flow-label {
+  fill: #e0a45c;
+  font-weight: 600;
+}
+</style><defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="4" orient="auto"><path d="M1,1 L7,4 L1,7 Z" fill="#e0a45c"></path></marker></defs><rect width="1280" height="780" fill="#0d1014"></rect><text x="48" y="58" class="scene-title">Brigade orchestration</text><text x="48" y="84" class="scene-summary">A source-grounded view of systems and flows.</text><g><line x1="118.5" y1="152" x2="118.5" y2="736" class="lifeline"></line><g data-block-id="user" role="button" tabindex="0" aria-label="User" class="scene-block active   "><rect x="54" y="92" width="129" height="60" rx="9" class="card-rect"></rect><foreignObject x="54" y="92" width="129" height="60"><div class="participant" xmlns="http://www.w3.org/1999/xhtml"><span>User</span></div></foreignObject></g></g><g><line x1="267.5" y1="152" x2="267.5" y2="736" class="lifeline"></line><g data-block-id="brigade-cli" role="button" tabindex="0" aria-label="Brigade CLI" class="scene-block active   "><rect x="203" y="92" width="129" height="60" rx="9" class="card-rect"></rect><foreignObject x="203" y="92" width="129" height="60"><div class="participant" xmlns="http://www.w3.org/1999/xhtml"><span>Brigade CLI</span></div></foreignObject></g></g><g><line x1="416.5" y1="152" x2="416.5" y2="736" class="lifeline"></line><g data-block-id="roster" role="button" tabindex="0" aria-label="Roster" class="scene-block active   "><rect x="352" y="92" width="129" height="60" rx="9" class="card-rect"></rect><foreignObject x="352" y="92" width="129" height="60"><div class="participant" xmlns="http://www.w3.org/1999/xhtml"><span>Roster</span></div></foreignObject></g></g><g><line x1="565.5" y1="152" x2="565.5" y2="736" class="lifeline"></line><g data-block-id="coder-seat" role="button" tabindex="0" aria-label="Coder seat" class="scene-block active   "><rect x="501" y="92" width="129" height="60" rx="9" class="card-rect"></rect><foreignObject x="501" y="92" width="129" height="60"><div class="participant" xmlns="http://www.w3.org/1999/xhtml"><span>Coder seat</span></div></foreignObject></g></g><g><line x1="714.5" y1="152" x2="714.5" y2="736" class="lifeline"></line><g data-block-id="mcp-sidecars" role="button" tabindex="0" aria-label="MCP sidecars" class="scene-block active   "><rect x="650" y="92" width="129" height="60" rx="9" class="card-rect"></rect><foreignObject x="650" y="92" width="129" height="60"><div class="participant" xmlns="http://www.w3.org/1999/xhtml"><span>MCP sidecars</span></div></foreignObject></g></g><g><line x1="863.5" y1="152" x2="863.5" y2="736" class="lifeline"></line><g data-block-id="reviewer-seat" role="button" tabindex="0" aria-label="Reviewer seat" class="scene-block active   "><rect x="799" y="92" width="129" height="60" rx="9" class="card-rect"></rect><foreignObject x="799" y="92" width="129" height="60"><div class="participant" xmlns="http://www.w3.org/1999/xhtml"><span>Reviewer seat</span></div></foreignObject></g></g><g><line x1="1012.5" y1="152" x2="1012.5" y2="736" class="lifeline"></line><g data-block-id="verification" role="button" tabindex="0" aria-label="Verification" class="scene-block active   "><rect x="948" y="92" width="129" height="60" rx="9" class="card-rect"></rect><foreignObject x="948" y="92" width="129" height="60"><div class="participant" xmlns="http://www.w3.org/1999/xhtml"><span>Verification</span></div></foreignObject></g></g><g><line x1="1161.5" y1="152" x2="1161.5" y2="736" class="lifeline"></line><g data-block-id="outcome-database" role="button" tabindex="0" aria-label="Outcome database" class="scene-block active   "><rect x="1097" y="92" width="129" height="60" rx="9" class="card-rect"></rect><foreignObject x="1097" y="92" width="129" height="60"><div class="participant" xmlns="http://www.w3.org/1999/xhtml"><span>Outcome database</span></div></foreignObject></g></g><g data-edge-id="user-brigade-cli-runs-a-task" role="button" class="flow active   "><text x="193" y="199" text-anchor="middle" class="flow-label">runs a task</text><path d="M 118.5 208 L 267.5 208" marker-end="url(#arrow)"></path></g><g data-edge-id="brigade-cli-roster-loads-seats" role="button" class="flow active   "><text x="342" y="259" text-anchor="middle" class="flow-label">loads seats</text><path d="M 267.5 268 L 416.5 268" marker-end="url(#arrow)"></path></g><g data-edge-id="roster-coder-seat-assigns-the-work" role="button" class="flow active   "><text x="491" y="319" text-anchor="middle" class="flow-label">assigns the work</text><path d="M 416.5 328 L 565.5 328" marker-end="url(#arrow)"></path></g><g data-edge-id="coder-seat-mcp-sidecars-calls-tools" role="button" class="flow active   "><text x="640" y="379" text-anchor="middle" class="flow-label">calls tools</text><path d="M 565.5 388 L 714.5 388" marker-end="url(#arrow)"></path></g><g data-edge-id="coder-seat-reviewer-seat-submits-the-diff" role="button" class="flow active   "><text x="714.5" y="439" text-anchor="middle" class="flow-label">submits the diff</text><path d="M 565.5 448 L 863.5 448" marker-end="url(#arrow)"></path></g><g data-edge-id="reviewer-seat-verification-runs-checks" role="button" class="flow active   "><text x="938" y="499" text-anchor="middle" class="flow-label">runs checks</text><path d="M 863.5 508 L 1012.5 508" marker-end="url(#arrow)"></path></g><g data-edge-id="verification-outcome-database-records-results" role="button" class="flow active   "><text x="1087" y="559" text-anchor="middle" class="flow-label">records results</text><path d="M 1012.5 568 L 1161.5 568" marker-end="url(#arrow)"></path></g></svg></section><p class="inspector" aria-live="polite">Select an element to inspect it.</p><script type="application/json" id="scene-data">{"schemaVersion":1,"title":"Brigade orchestration","subtitle":"Implementation view: interfaces, boundaries, evidence, and failure paths.","summary":"A source-grounded view of systems and flows.","audience":"engineer","view":"sequence","source":{"kind":"text","text":"# Brigade orchestration\n\nUser -> Brigade CLI: runs a task\nBrigade CLI -> Roster: loads seats\nRoster -> Coder seat: assigns the work\nCoder seat -> MCP sidecars: calls tools\nCoder seat -> Reviewer seat: submits the diff\nReviewer seat -> Verification: runs checks\nVerification -> Outcome database: records results\n\nThe MCP sidecars include `skills`, `cards`, `scanners`, `security`, and `tools`."},"facts":[{"id":"fact-user-brigade-cli-runs-a-task","text":"User -> Brigade CLI: runs a task","start":25,"end":57},{"id":"fact-brigade-cli-roster-loads-seats","text":"Brigade CLI -> Roster: loads seats","start":58,"end":92},{"id":"fact-roster-coder-seat-assigns-the-work","text":"Roster -> Coder seat: assigns the work","start":93,"end":131},{"id":"fact-coder-seat-mcp-sidecars-calls-tools","text":"Coder seat -> MCP sidecars: calls tools","start":132,"end":171},{"id":"fact-coder-seat-reviewer-seat-submits-the-diff","text":"Coder seat -> Reviewer seat: submits the diff","start":172,"end":217},{"id":"fact-reviewer-seat-verification-runs-checks","text":"Reviewer seat -> Verification: runs checks","start":218,"end":260},{"id":"fact-verification-outcome-database-records-results","text":"Verification -> Outcome database: records results","start":261,"end":310},{"id":"fact-brigade-orchestration-user-brigade-cli-runs-a-task-brigade-cli-roster-loads-seats-roster-coder-seat-assigns-the-work-coder-seat-mcp-sidecars-calls-tools-coder-seat-reviewer-seat-submits-the-diff-reviewer-seat-verification-runs-checks-verification-outcome-database-records-results-the-mcp-sidecars-include-skills-cards-scanners-security-and-tools","text":"# Brigade orchestration\n\nUser -> Brigade CLI: runs a task\nBrigade CLI -> Roster: loads seats\nRoster -> Coder seat: assigns the work\nCoder seat -> MCP sidecars: calls tools\nCoder seat -> Reviewer seat: submits the diff\nReviewer seat -> Verification: runs checks\nVerification -> Outcome database: records results\n\nThe MCP sidecars include `skills`, `cards`, `scanners`, `security`, and `tools`.","start":0,"end":392}],"terms":["User","Brigade CLI","Roster","Coder seat","MCP sidecars","Reviewer seat","Verification","Outcome database","Brigade orchestration","skills","cards","scanners"],"blocks":[{"id":"user","label":"User","kind":"actor","detail":"User -> Brigade CLI: runs a task","factIds":["fact-user-brigade-cli-runs-a-task"],"x":54,"y":92,"w":129,"h":60},{"id":"brigade-cli","label":"Brigade CLI","kind":"service","detail":"User -> Brigade CLI: runs a task","factIds":["fact-user-brigade-cli-runs-a-task","fact-brigade-cli-roster-loads-seats"],"x":203,"y":92,"w":129,"h":60},{"id":"roster","label":"Roster","kind":"service","detail":"Brigade CLI -> Roster: loads seats","factIds":["fact-brigade-cli-roster-loads-seats","fact-roster-coder-seat-assigns-the-work"],"x":352,"y":92,"w":129,"h":60},{"id":"coder-seat","label":"Coder seat","kind":"service","detail":"Roster -> Coder seat: assigns the work","factIds":["fact-roster-coder-seat-assigns-the-work","fact-coder-seat-mcp-sidecars-calls-tools","fact-coder-seat-reviewer-seat-submits-the-diff"],"x":501,"y":92,"w":129,"h":60},{"id":"mcp-sidecars","label":"MCP sidecars","kind":"service","detail":"Coder seat -> MCP sidecars: calls tools","factIds":["fact-coder-seat-mcp-sidecars-calls-tools"],"x":650,"y":92,"w":129,"h":60},{"id":"reviewer-seat","label":"Reviewer seat","kind":"service","detail":"Coder seat -> Reviewer seat: submits the diff","factIds":["fact-coder-seat-reviewer-seat-submits-the-diff","fact-reviewer-seat-verification-runs-checks"],"x":799,"y":92,"w":129,"h":60},{"id":"verification","label":"Verification","kind":"service","detail":"Reviewer seat -> Verification: runs checks","factIds":["fact-reviewer-seat-verification-runs-checks","fact-verification-outcome-database-records-results"],"x":948,"y":92,"w":129,"h":60},{"id":"outcome-database","label":"Outcome database","kind":"store","detail":"Verification -> Outcome database: records results","factIds":["fact-verification-outcome-database-records-results"],"x":1097,"y":92,"w":129,"h":60},{"id":"brigade-orchestration","label":"Brigade orchestration","kind":"service","detail":"Extracted from source material.","factIds":[],"x":44,"y":92,"w":129,"h":60}],"edges":[{"id":"user-brigade-cli-runs-a-task","from":"user","to":"brigade-cli","label":"runs a task","factIds":["fact-user-brigade-cli-runs-a-task"],"order":0},{"id":"brigade-cli-roster-loads-seats","from":"brigade-cli","to":"roster","label":"loads seats","factIds":["fact-brigade-cli-roster-loads-seats"],"order":1},{"id":"roster-coder-seat-assigns-the-work","from":"roster","to":"coder-seat","label":"assigns the work","factIds":["fact-roster-coder-seat-assigns-the-work"],"order":2},{"id":"coder-seat-mcp-sidecars-calls-tools","from":"coder-seat","to":"mcp-sidecars","label":"calls tools","factIds":["fact-coder-seat-mcp-sidecars-calls-tools"],"order":3},{"id":"coder-seat-reviewer-seat-submits-the-diff","from":"coder-seat","to":"reviewer-seat","label":"submits the diff","factIds":["fact-coder-seat-reviewer-seat-submits-the-diff"],"order":4},{"id":"reviewer-seat-verification-runs-checks","from":"reviewer-seat","to":"verification","label":"runs checks","factIds":["fact-reviewer-seat-verification-runs-checks"],"order":5},{"id":"verification-outcome-database-records-results","from":"verification","to":"outcome-database","label":"records results","factIds":["fact-verification-outcome-database-records-results"],"order":6}],"warnings":[]}</script><script>(()=>{const d=JSON.parse(document.querySelector('#scene-data').textContent);const show=v=>document.querySelectorAll('.view').forEach(x=>x.hidden=x.dataset.view!==v);document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.view)));document.querySelectorAll('[data-block-id],[data-edge-id]').forEach(n=>{n.tabIndex=0;const pick=()=>{const item=d.blocks.find(x=>x.id===n.dataset.blockId)||d.edges.find(x=>x.id===n.dataset.edgeId);document.querySelector('.inspector').textContent=item?item.label:'Unknown element'};n.addEventListener('click',pick);n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick()}})});show(d.view)})();</script></main></body></html>

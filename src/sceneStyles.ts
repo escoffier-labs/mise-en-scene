@@ -191,6 +191,30 @@ export const sceneCss = `
   pointer-events: none;
 }
 
+/* Sequence participant header: centered, wrapping name, no detail paragraph. */
+.participant {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 10px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.participant span {
+  display: -webkit-box;
+  overflow: hidden;
+  color: ${T.text};
+  font-family: ${sans};
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .card h3 {
   margin: 0 0 5px;
   overflow: hidden;
@@ -236,6 +260,51 @@ export const sceneCss = `
   font-family: ${mono};
   font-size: 10.5px;
   line-height: 1.5;
+}
+
+/* Dimming and spotlight overrides. These are compound and placed last so they
+   win the specificity tie against .scene-block.active / .flow.active (which pin
+   opacity to 1). "ungrounded" is the Review-evidence filter; "walk-*" is the
+   walkthrough spotlight applied by the animated HTML player and the video
+   recorder. Inert until a class is set, so the live studio is unaffected. */
+.stage-camera {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+.scene-block {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.scene-block.ungrounded,
+.flow.ungrounded {
+  opacity: 0.22;
+}
+.scene-block.walk-dim,
+.flow.walk-dim {
+  opacity: 0.14;
+  transition: opacity 0.4s ease;
+}
+.scene-block.walk-on,
+.flow.walk-on {
+  opacity: 1;
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.scene-block.walk-on {
+  transform: scale(1.05);
+}
+.scene-block.walk-on .card-rect {
+  stroke: ${T.accent};
+  stroke-width: 2.5;
+  filter: drop-shadow(0 6px 16px rgba(224, 164, 92, 0.35));
+}
+.flow.walk-on path {
+  stroke: ${T.accent};
+  stroke-width: 2.6;
+  filter: drop-shadow(0 0 6px rgba(224, 164, 92, 0.45));
+}
+.flow.walk-on .flow-label {
+  fill: ${T.accent};
+  font-weight: 600;
 }
 `;
 

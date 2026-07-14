@@ -10,11 +10,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Deterministic source-derived blocks, relationships, facts, and evidence ranges.
 - Structured OpenAPI JSON extraction for API, tag, and operation elements.
+- OpenAPI YAML extraction through a dependency-free parser scoped to the OpenAPI subset.
+- Repository crawling in the browser: open a local folder or fetch a public GitHub repo, with Mermaid diagram conversion into the arrow grammar.
+- PNG screenshot export that rasterizes the active view.
+- Walkthrough exports that give a guided tour of the scene one relationship at a time, with a camera that zooms to each connection, spotlight highlighting, an animated title card, and a progress bar, as a self-contained animated HTML file and as a recorded WebM video.
 - Architecture and sequence scene layouts plus an evidence review filter.
 - Versioned JSON import and export with validation for untrusted documents.
 - Editable block and relationship labels with source evidence navigation.
 - Offline interactive HTML export and script-free SVG export from the shared renderer.
-- Node-based tests for validation, extraction, layout, editing, and export safety.
+- Node-based tests for validation, extraction, layout, editing, YAML, crawling, raster, walkthrough, and export safety.
+
+### Fixed
+- Review and walkthrough dimming now win the specificity tie against active elements, so dimmed blocks and edges actually fade.
+- Card labels and details now render in PNG and video exports; the `foreignObject` content carries the XHTML namespace so image rasterization keeps it instead of dropping to empty cards.
+
+### Changed
+- `tsconfig` uses `moduleResolution: "Bundler"`, the idiomatic setting for the Vite app and forward compatible with newer TypeScript.
+- Cleaner sequence view: only participants that exchange messages are shown, spaced evenly with centered wrapping name headers, and messages cascade down the full canvas height instead of crowding the top.
 
 ## [0.1.0] - 2026-06-27
 

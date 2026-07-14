@@ -1,4 +1,5 @@
 import { SCENE_LIMITS, slugId, type Audience, type BlockKind, type SceneBlock, type SceneDocument, type SceneEdge, type SceneFact } from "./types.ts";
+import { parseYaml } from "./yaml.ts";
 
 const audienceCopy: Record<Audience, string> = {
   engineer: "Implementation view: interfaces, boundaries, evidence, and failure paths.",
@@ -12,6 +13,10 @@ export type ExtractionResult = { document: SceneDocument; fallback: boolean };
 export function extractScene(source: string, audience: Audience): ExtractionResult {
   const openapi = parseOpenApi(source);
   return openapi ? extractOpenApi(source, openapi, audience) : extractText(source, audience);
+}
+
+function isOpenApi(value: any): value is Record<string, any> {
+  return value && typeof value === "object" && typeof value.openapi === "string" && value.paths && typeof value.paths === "object";
 }
 
 function base(source: string, audience: Audience, kind: "text" | "openapi"): SceneDocument {
@@ -62,7 +67,29 @@ function extractText(source: string, audience: Audience): ExtractionResult {
   return { document, fallback: false };
 }
 
-function parseOpenApi(source: string): any | null { try { const v = JSON.parse(source); return v && typeof v.openapi === "string" && v.paths && typeof v.paths === "object" ? v : null; } catch { return null; } }
+function parseOpenApi(source: string): any | null {
+  try {
+    const json = JSON.parse(source);
+    if (isOpenApi(json)) return json;
+  } catch {
+    // Not JSON; fall through to the YAML path below.
+  }
+  // Gate YAML parsing behind a cheap signature check so arbitrary prose is not
+  // run through the parser and a misparse can never masquerade as an API.
+  if (/^\s*openapi\s*:/m.test(source) && /^\s*paths\s*:/m.test(source)) {
+    const yaml = parseYaml(source);
+    if (isOpenApi(yaml)) return yaml;
+  }
+  return null;
+}
+
+// Prefer the verbatim source offset (YAML and unescaped JSON), then fall back to
+// the JSON-escaped form (quoted JSON strings with escapes).
+function factOffset(source: string, text: string): number {
+  const raw = source.indexOf(text);
+  if (raw >= 0) return raw;
+  return source.indexOf(JSON.stringify(text).slice(1, -1));
+}
 
 function extractOpenApi(source: string, api: any, audience: Audience): ExtractionResult {
   const document = base(source, audience, "openapi"); document.title = typeof api.info?.title === "string" ? api.info.title : "API";
@@ -78,7 +105,7 @@ function extractOpenApi(source: string, api: any, audience: Audience): Extractio
       let tag = tags.get(tagName);
       if (!tag) { tag = block(tagName, "interface", usedBlocks); tags.set(tagName, tag); document.blocks.push(tag); document.edges.push(edge(apiBlock, tag, "groups", [], usedEdges)); }
       const label = `${method.toUpperCase()} ${path}`; const op = block(label, "step", usedBlocks); const text = operation.summary || operation.description || label;
-      const offset = typeof text === "string" ? source.indexOf(JSON.stringify(text).slice(1, -1)) : -1;
+      const offset = typeof text === "string" ? factOffset(source, text) : -1;
       const fact: SceneFact = { id: slugId(`fact-${text}`, usedFacts), text: String(text), start: offset, end: offset < 0 ? -1 : offset + String(text).length };
       document.facts.push(fact); op.detail = fact.text; op.factIds = [fact.id]; document.blocks.push(op); document.edges.push(edge(tag, op, method.toUpperCase(), [fact.id], usedEdges));
       document.terms.push(tagName, ...String(path).match(/\{([^}]+)\}/g) ?? []);
