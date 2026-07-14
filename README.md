@@ -83,8 +83,9 @@ backend:
 JSON exports use a validated, versioned schema and can be imported for another
 editing session. HTML exports work offline and retain view switching and element
 inspection. SVG exports contain the active view and no scripts. PNG exports
-rasterize the active view. The walkthrough export steps through the scene one
-relationship at a time, as a self-contained animated HTML file or a recorded
+rasterize the active view. The walkthrough export gives a guided tour of the
+scene one relationship at a time, with a camera that zooms to each connection
+and spotlight highlighting, as a self-contained animated HTML file or a recorded
 WebM video.
 
 ## Code layout

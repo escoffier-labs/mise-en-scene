@@ -238,29 +238,49 @@ export const sceneCss = `
   line-height: 1.5;
 }
 
-/* Dimming overrides. These are compound and placed last so they win the
-   specificity tie against .scene-block.active / .flow.active (which pin opacity
-   to 1). "ungrounded" is the Review-evidence filter; "walk-*" is the spotlight
-   applied by the animated HTML player and the video recorder. Inert until a
-   class is set, so the live studio is unaffected. */
+/* Dimming and spotlight overrides. These are compound and placed last so they
+   win the specificity tie against .scene-block.active / .flow.active (which pin
+   opacity to 1). "ungrounded" is the Review-evidence filter; "walk-*" is the
+   walkthrough spotlight applied by the animated HTML player and the video
+   recorder. Inert until a class is set, so the live studio is unaffected. */
+.stage-camera {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+.scene-block {
+  transform-box: fill-box;
+  transform-origin: center;
+}
 .scene-block.ungrounded,
 .flow.ungrounded {
   opacity: 0.22;
 }
 .scene-block.walk-dim,
 .flow.walk-dim {
-  opacity: 0.16;
-  transition: opacity 0.35s ease;
+  opacity: 0.14;
+  transition: opacity 0.4s ease;
 }
 .scene-block.walk-on,
 .flow.walk-on {
   opacity: 1;
-  transition: opacity 0.35s ease;
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.walk-on path,
-.walk-on .card-rect {
+.scene-block.walk-on {
+  transform: scale(1.05);
+}
+.scene-block.walk-on .card-rect {
   stroke: ${T.accent};
   stroke-width: 2.5;
+  filter: drop-shadow(0 6px 16px rgba(224, 164, 92, 0.35));
+}
+.flow.walk-on path {
+  stroke: ${T.accent};
+  stroke-width: 2.6;
+  filter: drop-shadow(0 0 6px rgba(224, 164, 92, 0.45));
+}
+.flow.walk-on .flow-label {
+  fill: ${T.accent};
+  font-weight: 600;
 }
 `;
 

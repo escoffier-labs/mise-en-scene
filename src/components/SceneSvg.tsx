@@ -2,7 +2,7 @@ import { sceneCss, T } from "../sceneStyles";
 import type { SceneBlock, SceneDocument } from "../scene/types";
 import type { Spotlight } from "../scene/walkthrough";
 
-type Props = { scene: SceneDocument; selectedId?: string; review?: boolean; spotlight?: Spotlight | null; onSelect?: (type: "block" | "edge", id: string) => void };
+type Props = { scene: SceneDocument; selectedId?: string; review?: boolean; spotlight?: Spotlight | null; camera?: string; onSelect?: (type: "block" | "edge", id: string) => void };
 
 // Extra class applied when a walkthrough step is being rendered: the active
 // edge and its endpoints get "walk-on", everything else "walk-dim". Absent when
@@ -13,12 +13,15 @@ function walk(spotlight: Spotlight | null | undefined, id: string, isEdge: boole
   return active ? "walk-on" : "walk-dim";
 }
 
-export function SceneSvg({ scene, selectedId, review, spotlight, onSelect }: Props) {
+export function SceneSvg({ scene, selectedId, review, spotlight, camera, onSelect }: Props) {
   const byId = new Map(scene.blocks.map((block) => [block.id, block]));
+  const body = scene.view === "sequence"
+    ? <Sequence scene={scene} selectedId={selectedId} review={review} spotlight={spotlight} onSelect={onSelect}/>
+    : <Architecture scene={scene} byId={byId} selectedId={selectedId} review={review} spotlight={spotlight} onSelect={onSelect}/>;
   return <svg viewBox="0 0 1280 780" role="group" aria-label={`${scene.title} ${scene.view} scene`}>
     <style>{sceneCss}</style><defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="4" orient="auto"><path d="M1,1 L7,4 L1,7 Z" fill={T.accent}/></marker></defs>
     <rect width="1280" height="780" fill={T.bg}/><text x="48" y="58" className="scene-title">{short(scene.title, 64)}</text><text x="48" y="84" className="scene-summary">{short(scene.summary, 110)}</text>
-    {scene.view === "sequence" ? <Sequence scene={scene} selectedId={selectedId} review={review} spotlight={spotlight} onSelect={onSelect}/> : <Architecture scene={scene} byId={byId} selectedId={selectedId} review={review} spotlight={spotlight} onSelect={onSelect}/>}
+    {camera !== undefined ? <g className="stage-camera" transform={camera}>{body}</g> : body}
   </svg>;
 }
 

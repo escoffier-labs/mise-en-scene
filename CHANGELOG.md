@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenAPI YAML extraction through a dependency-free parser scoped to the OpenAPI subset.
 - Repository crawling in the browser: open a local folder or fetch a public GitHub repo, with Mermaid diagram conversion into the arrow grammar.
 - PNG screenshot export that rasterizes the active view.
-- Walkthrough exports that step through the scene one relationship at a time, as a self-contained animated HTML file and as a recorded WebM video.
+- Walkthrough exports that give a guided tour of the scene one relationship at a time, with a camera that zooms to each connection, spotlight highlighting, an animated title card, and a progress bar, as a self-contained animated HTML file and as a recorded WebM video.
 - Architecture and sequence scene layouts plus an evidence review filter.
 - Versioned JSON import and export with validation for untrusted documents.
 - Editable block and relationship labels with source evidence navigation.
