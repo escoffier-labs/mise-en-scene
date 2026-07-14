@@ -1,0 +1,255 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mise en Scene walkthrough</title><style>body{margin:0;background:radial-gradient(120% 90% at 50% 0%,#141b24 0%,#0d1014 60%);color:#dde3ea;font:15px system-ui}main{max-width:1280px;margin:auto;padding:24px}.walk-stage{position:relative;border:1px solid #1e242c;border-radius:12px;overflow:hidden}svg{width:100%;height:auto;display:block}.walk-title{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:linear-gradient(180deg,rgba(13,16,20,.55),rgba(13,16,20,.78));opacity:0;pointer-events:none;transition:opacity .5s ease}.walk-title.show{opacity:1}.walk-title h1{margin:0 0 10px;font-size:34px;font-weight:700;letter-spacing:-.02em}.walk-title p{margin:0;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#e0a45c}.walk-progress{height:3px;margin-top:12px;background:#1e242c;border-radius:2px;overflow:hidden}#walk-fill{display:block;height:100%;width:0;background:#e0a45c;transition:width .4s ease}.walk-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}.walk-bar button{padding:8px 14px;background:#11161c;color:#dde3ea;border:1px solid #2a323d;border-radius:8px;cursor:pointer;font:inherit}.walk-bar button:hover,.walk-bar button:focus-visible{border-color:#4a5664}#walk-caption{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:#e0a45c}#walk-counter{margin-left:auto;color:#9aa4b2;font-size:13px}</style></head><body><main><div class="walk-stage"><svg viewBox="0 0 1280 780" role="group" aria-label="Brigade orchestration architecture scene"><style>
+.scene-title {
+  fill: #dde3ea;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.scene-summary {
+  fill: #7d8590;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.scene-meta {
+  fill: #5c6672;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.zone-frame {
+  fill: none;
+  stroke: #232b34;
+  stroke-dasharray: 4 5;
+  stroke-width: 1;
+}
+
+.zone-title {
+  fill: #9aa4b2;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+
+.zone-desc {
+  fill: #5c6672;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+
+.scene-mode {
+  cursor: pointer;
+}
+
+.scene-mode rect {
+  fill: #11161c;
+  stroke: #2a323d;
+}
+
+.scene-mode:hover rect {
+  stroke: #43505e;
+}
+
+.scene-mode .scene-mode-active {
+  fill: #e0a45c;
+  stroke: #e0a45c;
+}
+
+.scene-mode-text {
+  fill: #9aa4b2;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.scene-mode-text-active {
+  fill: #0d1014;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.flow path {
+  fill: none;
+  stroke: #38424e;
+  stroke-width: 1.1;
+}
+
+.flow.dashed path {
+  stroke-dasharray: 4 5;
+}
+
+.flow {
+  opacity: 0.35;
+}
+
+.flow.active {
+  opacity: 1;
+}
+
+.flow.active path {
+  stroke: #e0a45c;
+  stroke-width: 1.4;
+}
+
+.selected path,
+.selected .card-rect {
+  stroke: #e0a45c;
+  stroke-width: 2.5;
+}
+
+.ungrounded {
+  opacity: 0.22;
+}
+
+.lifeline {
+  stroke: #2a323d;
+  stroke-width: 1;
+  stroke-dasharray: 4 5;
+}
+
+.flow-label {
+  fill: #7d8590;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  paint-order: stroke;
+  stroke: #0d1014;
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+
+.flow.active .flow-label {
+  fill: #e0a45c;
+}
+
+.scene-block {
+  cursor: pointer;
+  opacity: 0.35;
+}
+
+.scene-block.active,
+.scene-block.selected {
+  opacity: 1;
+}
+
+.card-rect {
+  fill: #121821;
+  stroke: #2a323d;
+  stroke-width: 1;
+}
+
+.scene-block:hover .card-rect {
+  stroke: #43505e;
+}
+
+.scene-block.selected .card-rect {
+  stroke: #e0a45c;
+  stroke-width: 1.3;
+}
+
+.card {
+  padding: 13px 16px;
+  pointer-events: none;
+}
+
+.card h3 {
+  margin: 0 0 5px;
+  overflow: hidden;
+  color: #dde3ea;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card p {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: #9aa4b2;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.callout rect {
+  fill: #11161c;
+  stroke: #9c6f3a;
+  stroke-width: 1;
+}
+
+.callout-title {
+  fill: #e0a45c;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.callout p {
+  margin: 0;
+  color: #9aa4b2;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+/* Dimming and spotlight overrides. These are compound and placed last so they
+   win the specificity tie against .scene-block.active / .flow.active (which pin
+   opacity to 1). "ungrounded" is the Review-evidence filter; "walk-*" is the
+   walkthrough spotlight applied by the animated HTML player and the video
+   recorder. Inert until a class is set, so the live studio is unaffected. */
+.stage-camera {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+.scene-block {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.scene-block.ungrounded,
+.flow.ungrounded {
+  opacity: 0.22;
+}
+.scene-block.walk-dim,
+.flow.walk-dim {
+  opacity: 0.14;
+  transition: opacity 0.4s ease;
+}
+.scene-block.walk-on,
+.flow.walk-on {
+  opacity: 1;
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.scene-block.walk-on {
+  transform: scale(1.05);
+}
+.scene-block.walk-on .card-rect {
+  stroke: #e0a45c;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 6px 16px rgba(224, 164, 92, 0.35));
+}
+.flow.walk-on path {
+  stroke: #e0a45c;
+  stroke-width: 2.6;
+  filter: drop-shadow(0 0 6px rgba(224, 164, 92, 0.45));
+}
+.flow.walk-on .flow-label {
+  fill: #e0a45c;
+  font-weight: 600;
+}
+</style><defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="4" orient="auto"><path d="M1,1 L7,4 L1,7 Z" fill="#e0a45c"></path></marker></defs><rect width="1280" height="780" fill="#0d1014"></rect><text x="48" y="58" class="scene-title">Brigade orchestration</text><text x="48" y="84" class="scene-summary">A source-grounded view of systems and flows.</text><g class="stage-camera" transform="translate(0 0) scale(1)"><g data-edge-id="user-brigade-cli-runs-a-task" role="button" class="flow active   "><path d="M 288 196 C 358 196, 462 196, 532 196" marker-end="url(#arrow)"></path><text x="410" y="188" text-anchor="middle" class="flow-label">runs a task</text></g><g data-edge-id="brigade-cli-roster-loads-seats" role="button" class="flow active   "><path d="M 748 196 C 818 196, 462 270.2857142857143, 532 270.2857142857143" marker-end="url(#arrow)"></path><text x="640" y="225.14285714285714" text-anchor="middle" class="flow-label">loads seats</text></g><g data-edge-id="roster-coder-seat-assigns-the-work" role="button" class="flow active   "><path d="M 748 270.2857142857143 C 818 270.2857142857143, 462 344.57142857142856, 532 344.57142857142856" marker-end="url(#arrow)"></path><text x="640" y="299.42857142857144" text-anchor="middle" class="flow-label">assigns the work</text></g><g data-edge-id="coder-seat-mcp-sidecars-calls-tools" role="button" class="flow active   "><path d="M 748 344.57142857142856 C 818 344.57142857142856, 462 418.8571428571429, 532 418.8571428571429" marker-end="url(#arrow)"></path><text x="640" y="373.7142857142857" text-anchor="middle" class="flow-label">calls tools</text></g><g data-edge-id="coder-seat-reviewer-seat-submits-the-diff" role="button" class="flow active   "><path d="M 748 344.57142857142856 C 818 344.57142857142856, 462 493.14285714285717, 532 493.14285714285717" marker-end="url(#arrow)"></path><text x="640" y="410.8571428571429" text-anchor="middle" class="flow-label">submits the diff</text></g><g data-edge-id="reviewer-seat-verification-runs-checks" role="button" class="flow active   "><path d="M 748 493.14285714285717 C 818 493.14285714285717, 462 567.4285714285714, 532 567.4285714285714" marker-end="url(#arrow)"></path><text x="640" y="522.2857142857143" text-anchor="middle" class="flow-label">runs checks</text></g><g data-edge-id="verification-outcome-database-records-results" role="button" class="flow active   "><path d="M 748 567.4285714285714 C 818 567.4285714285714, 922 196, 992 196" marker-end="url(#arrow)"></path><text x="870" y="373.7142857142857" text-anchor="middle" class="flow-label">records results</text></g><g data-block-id="user" role="button" tabindex="0" aria-label="User" class="scene-block active   "><rect x="72" y="150" width="216" height="92" rx="10" class="card-rect"></rect><foreignObject x="72" y="150" width="216" height="92"><div class="card" xmlns="http://www.w3.org/1999/xhtml"><h3>User</h3><p>User -&gt; Brigade CLI: runs a task</p></div></foreignObject></g><g data-block-id="brigade-cli" role="button" tabindex="0" aria-label="Brigade CLI" class="scene-block active   "><rect x="532" y="150" width="216" height="92" rx="10" class="card-rect"></rect><foreignObject x="532" y="150" width="216" height="92"><div class="card" xmlns="http://www.w3.org/1999/xhtml"><h3>Brigade CLI</h3><p>User -&gt; Brigade CLI: runs a task</p></div></foreignObject></g><g data-block-id="roster" role="button" tabindex="0" aria-label="Roster" class="scene-block active   "><rect x="532" y="224.28571428571428" width="216" height="92" rx="10" class="card-rect"></rect><foreignObject x="532" y="224.28571428571428" width="216" height="92"><div class="card" xmlns="http://www.w3.org/1999/xhtml"><h3>Roster</h3><p>Brigade CLI -&gt; Roster: loads seats</p></div></foreignObject></g><g data-block-id="coder-seat" role="button" tabindex="0" aria-label="Coder seat" class="scene-block active   "><rect x="532" y="298.57142857142856" width="216" height="92" rx="10" class="card-rect"></rect><foreignObject x="532" y="298.57142857142856" width="216" height="92"><div class="card" xmlns="http://www.w3.org/1999/xhtml"><h3>Coder seat</h3><p>Roster -&gt; Coder seat: assigns the work</p></div></foreignObject></g><g data-block-id="mcp-sidecars" role="button" tabindex="0" aria-label="MCP sidecars" class="scene-block active   "><rect x="532" y="372.8571428571429" width="216" height="92" rx="10" class="card-rect"></rect><foreignObject x="532" y="372.8571428571429" width="216" height="92"><div class="card" xmlns="http://www.w3.org/1999/xhtml"><h3>MCP sidecars</h3><p>Coder seat -&gt; MCP sidecars: calls tools</p></div></foreignObject></g><g data-block-id="reviewer-seat" role="button" tabindex="0" aria-label="Reviewer seat" class="scene-block active   "><rect x="532" y="447.14285714285717" width="216" height="92" rx="10" class="card-rect"></rect><foreignObject x="532" y="447.14285714285717" width="216" height="92"><div class="card" xmlns="http://www.w3.org/1999/xhtml"><h3>Reviewer seat</h3><p>Coder seat -&gt; Reviewer seat: submits the diff</p></div></foreignObject></g><g data-block-id="verification" role="button" tabindex="0" aria-label="Verification" class="scene-block active   "><rect x="532" y="521.4285714285714" width="216" height="92" rx="10" class="card-rect"></rect><foreignObject x="532" y="521.4285714285714" width="216" height="92"><div class="card" xmlns="http://www.w3.org/1999/xhtml"><h3>Verification</h3><p>Reviewer seat -&gt; Verification: runs checks</p></div></foreignObject></g><g data-block-id="outcome-database" role="button" tabindex="0" aria-label="Outcome database" class="scene-block active   "><rect x="992" y="150" width="216" height="92" rx="10" class="card-rect"></rect><foreignObject x="992" y="150" width="216" height="92"><div class="card" xmlns="http://www.w3.org/1999/xhtml"><h3>Outcome database</h3><p>Verification -&gt; Outcome database: records results</p></div></foreignObject></g><g data-block-id="brigade-orchestration" role="button" tabindex="0" aria-label="Brigade orchestration" class="scene-block active   "><rect x="532" y="595.7142857142858" width="216" height="92" rx="10" class="card-rect"></rect><foreignObject x="532" y="595.7142857142858" width="216" height="92"><div class="card" xmlns="http://www.w3.org/1999/xhtml"><h3>Brigade orchestration</h3><p>Extracted from source material.</p></div></foreignObject></g></g></svg><div class="walk-title" id="walk-title"></div></div><div class="walk-progress"><span id="walk-fill"></span></div><div class="walk-bar"><button id="walk-play" type="button">Pause</button><button id="walk-prev" type="button">Prev</button><button id="walk-next" type="button">Next</button><span id="walk-caption" aria-live="polite"></span><span id="walk-counter"></span></div><script type="application/json" id="walk-steps">[{"index":0,"caption":"Brigade orchestration","blockIds":["user","brigade-cli","roster","coder-seat","mcp-sidecars","reviewer-seat","verification","outcome-database","brigade-orchestration"],"edgeId":null,"camera":"translate(0 0) scale(1)"},{"index":1,"caption":"User -> Brigade CLI: runs a task","blockIds":["user","brigade-cli"],"edgeId":"user-brigade-cli-runs-a-task","camera":"translate(0 0) scale(1.32)"},{"index":2,"caption":"Brigade CLI -> Roster: loads seats","blockIds":["brigade-cli","roster"],"edgeId":"brigade-cli-roster-loads-seats","camera":"translate(-204.8 0) scale(1.32)"},{"index":3,"caption":"Roster -> Coder seat: assigns the work","blockIds":["roster","coder-seat"],"edgeId":"roster-coder-seat-assigns-the-work","camera":"translate(-204.8 -15.806) scale(1.32)"},{"index":4,"caption":"Coder seat -> MCP sidecars: calls tools","blockIds":["coder-seat","mcp-sidecars"],"edgeId":"coder-seat-mcp-sidecars-calls-tools","camera":"translate(-204.8 -113.863) scale(1.32)"},{"index":5,"caption":"Coder seat -> Reviewer seat: submits the diff","blockIds":["coder-seat","reviewer-seat"],"edgeId":"coder-seat-reviewer-seat-submits-the-diff","camera":"translate(-204.8 -162.891) scale(1.32)"},{"index":6,"caption":"Reviewer seat -> Verification: runs checks","blockIds":["reviewer-seat","verification"],"edgeId":"reviewer-seat-verification-runs-checks","camera":"translate(-204.8 -249.6) scale(1.32)"},{"index":7,"caption":"Verification -> Outcome database: records results","blockIds":["verification","outcome-database"],"edgeId":"verification-outcome-database-records-results","camera":"translate(-409.6 -113.863) scale(1.32)"}]</script><script>(()=>{var steps=JSON.parse(document.getElementById('walk-steps').textContent);if(!steps.length)return;var cap=document.getElementById('walk-caption'),cnt=document.getElementById('walk-counter'),fill=document.getElementById('walk-fill'),play=document.getElementById('walk-play'),title=document.getElementById('walk-title'),cam=document.querySelector('.stage-camera');var blocks=[].slice.call(document.querySelectorAll('[data-block-id]')),edges=[].slice.call(document.querySelectorAll('[data-edge-id]'));var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;var i=0,timer=null,raf=null,curr={x:0,y:0,s:1};function pc(t){var m=/translate\(([-0-9.]+) ([-0-9.]+)\) scale\(([-0-9.]+)\)/.exec(t||'');return m?{x:+m[1],y:+m[2],s:+m[3]}:{x:0,y:0,s:1}}function apply(c){if(cam)cam.setAttribute('transform','translate('+c.x.toFixed(1)+' '+c.y.toFixed(1)+') scale('+c.s.toFixed(3)+')')}function ease(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2}function moveTo(t){var target=pc(t);if(reduce||!cam){curr=target;apply(curr);return}if(raf)cancelAnimationFrame(raf);var from={x:curr.x,y:curr.y,s:curr.s},start=null;function frame(ts){if(start===null)start=ts;var p=Math.min(1,(ts-start)/650),e=ease(p);curr={x:from.x+(target.x-from.x)*e,y:from.y+(target.y-from.y)*e,s:from.s+(target.s-from.s)*e};apply(curr);if(p<1)raf=requestAnimationFrame(frame)}raf=requestAnimationFrame(frame)}var set=function(n,a){n.classList.remove('walk-on','walk-dim');n.classList.add(a?'walk-on':'walk-dim')},clr=function(n){n.classList.remove('walk-on','walk-dim')};function paint(){var s=steps[i];if(s.edgeId===null){blocks.forEach(clr);edges.forEach(clr)}else{var on={};(s.blockIds||[]).forEach(function(id){on[id]=1});blocks.forEach(function(n){set(n,!!on[n.getAttribute('data-block-id')])});edges.forEach(function(n){set(n,n.getAttribute('data-edge-id')===s.edgeId)})}moveTo(s.camera);cap.textContent=s.caption;cnt.textContent=(i+1)+' / '+steps.length;fill.style.width=((i+1)/steps.length*100)+'%';if(title)title.classList.toggle('show',i===0)}function go(n){i=(n%steps.length+steps.length)%steps.length;paint()}function stop(){if(timer){clearInterval(timer);timer=null}play.textContent='Play'}function start(){stop();timer=setInterval(function(){go(i+1)},2200);play.textContent='Pause'}play.addEventListener('click',function(){timer?stop():start()});document.getElementById('walk-prev').addEventListener('click',function(){stop();go(i-1)});document.getElementById('walk-next').addEventListener('click',function(){stop();go(i+1)});var rels=steps.length-1;if(title)title.innerHTML='<h1></h1><p></p>';if(title){title.querySelector('h1').textContent=steps[0].caption;title.querySelector('p').textContent=rels+(rels===1?' relationship':' relationships')+' \u00b7 press Play'}paint();start()})();</script></main></body></html>

@@ -88,6 +88,23 @@ scene one relationship at a time, with a camera that zooms to each connection
 and spotlight highlighting, as a self-contained animated HTML file or a recorded
 WebM video.
 
+## Example
+
+The [`examples/`](examples/) directory holds a full run built from one short
+source file ([`brigade-source.md`](examples/brigade-source.md)) describing an
+orchestration pipeline and its sidecars.
+
+<p align="center">
+  <img src="examples/brigade-scene-sequence.png" alt="Sequence view of the example scene" width="820">
+</p>
+
+- **Scene:** [interactive HTML](examples/brigade-scene.html) with architecture
+  and sequence views, plus [PNG](examples/brigade-scene.png) and
+  [SVG](examples/brigade-scene.svg) stills.
+- **Walkthrough:** [animated HTML](examples/brigade-walkthrough.html) and a
+  recorded [WebM video](examples/brigade-walkthrough.webm), both a guided tour
+  that zooms to each relationship.
+
 ## Code layout
 
 - `src/App.tsx`: studio state, import, editing, provenance, and export actions.
