@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `tsconfig` uses `moduleResolution: "Bundler"`, the idiomatic setting for the Vite app and forward compatible with newer TypeScript.
+- Cleaner sequence view: only participants that exchange messages are shown, spaced evenly with centered wrapping name headers, and messages cascade down the full canvas height instead of crowding the top.
 
 ## [0.1.0] - 2026-06-27
 

@@ -191,6 +191,30 @@ export const sceneCss = `
   pointer-events: none;
 }
 
+/* Sequence participant header: centered, wrapping name, no detail paragraph. */
+.participant {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 10px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.participant span {
+  display: -webkit-box;
+  overflow: hidden;
+  color: ${T.text};
+  font-family: ${sans};
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .card h3 {
   margin: 0 0 5px;
   overflow: hidden;

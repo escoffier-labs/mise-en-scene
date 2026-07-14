@@ -16,10 +16,22 @@ function architecture(document: SceneDocument): SceneDocument {
 }
 
 function sequence(document: SceneDocument): SceneDocument {
+  // Participants are the blocks that actually exchange messages, ordered by
+  // first appearance. Unconnected blocks are kept in the document (so exports
+  // and round trips stay complete) but parked; the renderer only draws
+  // participants in sequence view. Slots are sized to the participant count so
+  // the row is evenly spread rather than crammed.
   const ordered: string[] = [];
   for (const edge of document.edges) for (const id of [edge.from, edge.to]) if (!ordered.includes(id)) ordered.push(id);
-  for (const block of document.blocks) if (!ordered.includes(block.id)) ordered.push(block.id);
-  const gap = Math.min(250, 1120 / Math.max(1, ordered.length));
-  const positions = new Map(ordered.map((id, index) => [id, { x: Math.min(1060, 48 + index * gap), y: 126 }]));
-  return { ...document, view: "sequence", blocks: document.blocks.map((block) => ({ ...block, ...positions.get(block.id)!, w: Math.min(190, gap - 12), h: 70 })), edges: document.edges.map((edge, order) => ({ ...edge, order })) };
+  const participants = ordered.length ? ordered : document.blocks.map((block) => block.id);
+  const slots = new Map(participants.map((id, index) => [id, index]));
+  const margin = 44;
+  const slot = (1280 - margin * 2) / Math.max(1, participants.length);
+  const w = Math.min(196, Math.round(slot - 20));
+  const place = (id: string) => {
+    const index = slots.get(id);
+    if (index === undefined) return { x: margin, y: 92, w, h: 60 };
+    return { x: Math.round(margin + slot * index + (slot - w) / 2), y: 92, w, h: 60 };
+  };
+  return { ...document, view: "sequence", blocks: document.blocks.map((block) => ({ ...block, ...place(block.id) })), edges: document.edges.map((edge, order) => ({ ...edge, order })) };
 }
