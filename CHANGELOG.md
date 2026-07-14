@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Review and walkthrough dimming now win the specificity tie against active elements, so dimmed blocks and edges actually fade.
+- Card labels and details now render in PNG and video exports; the `foreignObject` content carries the XHTML namespace so image rasterization keeps it instead of dropping to empty cards.
 
 ### Changed
 - `tsconfig` uses `moduleResolution: "Bundler"`, the idiomatic setting for the Vite app and forward compatible with newer TypeScript.
