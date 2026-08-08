@@ -16,7 +16,15 @@ export function extractScene(source: string, audience: Audience): ExtractionResu
 }
 
 function isOpenApi(value: any): value is Record<string, any> {
-  return value && typeof value === "object" && typeof value.openapi === "string" && value.paths && typeof value.paths === "object";
+  return (
+    !!value
+    && typeof value === "object"
+    && Object.prototype.hasOwnProperty.call(value, "openapi")
+    && typeof value.openapi === "string"
+    && Object.prototype.hasOwnProperty.call(value, "paths")
+    && !!value.paths
+    && typeof value.paths === "object"
+  );
 }
 
 function base(source: string, audience: Audience, kind: "text" | "openapi"): SceneDocument {

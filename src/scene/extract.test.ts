@@ -59,3 +59,19 @@ test("OpenAPI without operations uses fallback", () => {
   const result = extractScene(JSON.stringify({ openapi: "3.1.0", paths: {} }), "engineer");
   assert.match(result.document.warnings[0], /no operations/i);
 });
+
+test("inherited openapi and paths properties do not count as OpenAPI", () => {
+  // A __proto__ mapping would otherwise satisfy OpenAPI via the prototype chain.
+  const poisoned = `__proto__:
+  openapi: 3.1.0
+  paths:
+    /x:
+      get:
+        summary: ok
+  info:
+    title: Proto
+    version: "1.0"`;
+  const result = extractScene(poisoned, "engineer");
+  assert.equal(result.document.source.kind, "text");
+  assert.notEqual(result.document.source.kind, "openapi");
+});
