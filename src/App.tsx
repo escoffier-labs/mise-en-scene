@@ -3,6 +3,7 @@ import { SceneSvg } from "./components/SceneSvg";
 import { extractScene } from "./scene/extract";
 import { standaloneHtml, standaloneSvg, standaloneWalkthrough } from "./scene/exports";
 import { layoutScene } from "./scene/layout";
+import { preparePngRasterExport, prepareVideoRasterExport } from "./scene/foreignObjectRaster";
 import { PNG_SCALE, SCENE_HEIGHT, SCENE_WIDTH, sizedSvg, svgToDataUrl } from "./scene/raster";
 import { stepSpotlight, stepViewport, walkthroughSteps, type Viewport } from "./scene/walkthrough";
 import { CRAWL_MAX_BYTES, CRAWL_MAX_FILES, isCrawlableFile, isIgnoredDir, parseRepoUrl, selectRemoteCandidatePaths, synthesizeSource, type CrawlFile, type RepoRef } from "./scene/crawl";
@@ -121,6 +122,8 @@ export default function App() {
     catch (error) { setNotice(`Export failed: ${error instanceof Error ? error.message : "unknown error"}`); }
   }
   async function exportPng() {
+    const gate = await preparePngRasterExport();
+    if (!gate.ok) { setNotice(gate.notice); return; }
     try {
       const img=await loadImage(svgToDataUrl(sizedSvg(standaloneSvg(scene,review))));
       const canvas=globalThis.document.createElement("canvas"); canvas.width=SCENE_WIDTH*PNG_SCALE; canvas.height=SCENE_HEIGHT*PNG_SCALE;
@@ -133,7 +136,9 @@ export default function App() {
   async function recordWalkthrough() {
     const Recorder=(globalThis as any).MediaRecorder;
     const probe=globalThis.document.createElement("canvas");
-    if (typeof Recorder==="undefined" || typeof (probe as any).captureStream!=="function") { setNotice("Video recording is not supported in this browser"); return; }
+    const mediaSupported = typeof Recorder !== "undefined" && typeof (probe as any).captureStream === "function";
+    const gate = await prepareVideoRasterExport({ mediaSupported });
+    if (!gate.ok) { setNotice(gate.notice); return; }
     const mime=["video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm"].find((t)=>Recorder.isTypeSupported?.(t)) || "video/webm";
     try {
       setNotice("Recording walkthrough...");
