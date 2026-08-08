@@ -41,8 +41,15 @@ export function isRemoteCandidate(path: string): boolean {
 
 export function parseRepoUrl(input: string): RepoRef | null {
   const value = input.trim();
-  const github = value.match(/github\.com[/:]([^/\s]+)\/([^/\s#]+?)(?:\.git)?(?:\/tree\/([^/\s]+))?(?:[/#?].*)?$/i);
-  if (github) return { owner: github[1], repo: github[2], branch: github[3] };
+  // Path is optional and stops before ?/# so root URLs with query/fragment still match.
+  const github = value.match(/github\.com[/:]([^/\s]+)\/([^/\s#?]+?)(?:\.git)?(?:\/([^?#]*))?(?:[?#].*)?$/i);
+  if (github) {
+    const owner = github[1];
+    const repo = github[2];
+    const rest = (github[3] ?? "").replace(/\/+$/, "");
+    const tree = rest.match(/^tree\/(.+)$/i);
+    return { owner, repo, branch: tree?.[1] || undefined };
+  }
   const shorthand = value.match(/^([\w.-]+)\/([\w.-]+)$/);
   if (shorthand) return { owner: shorthand[1], repo: shorthand[2] };
   return null;
