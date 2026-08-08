@@ -6,7 +6,8 @@ import { layoutScene } from "./scene/layout";
 import { preparePngRasterExport, prepareVideoRasterExport } from "./scene/foreignObjectRaster";
 import { PNG_SCALE, SCENE_HEIGHT, SCENE_WIDTH, sizedSvg, svgToDataUrl } from "./scene/raster";
 import { stepSpotlight, stepViewport, walkthroughSteps, type Viewport } from "./scene/walkthrough";
-import { CRAWL_MAX_BYTES, CRAWL_MAX_FILES, isCrawlableFile, isIgnoredDir, parseRepoUrl, selectRemoteCandidatePaths, synthesizeSource, type CrawlFile, type RepoRef } from "./scene/crawl";
+import { CRAWL_MAX_BYTES, CRAWL_MAX_FILES, isCrawlableFile, isIgnoredDir, parseRepoUrl, synthesizeSource, type CrawlFile } from "./scene/crawl";
+import { fetchRepoFiles } from "./scene/github";
 import { T } from "./sceneStyles";
 import { editBlock, editEdge, type Audience, type SceneDocument, type SceneView } from "./scene/types";
 import { validateSceneDocument } from "./scene/validate";
@@ -32,28 +33,6 @@ async function readDirectory(dir: any, prefix = "", files: CrawlFile[] = []): Pr
     const path = prefix ? `${prefix}/${entry.name}` : entry.name;
     if (entry.kind === "directory") { if (!isIgnoredDir(entry.name)) await readDirectory(entry, path, files); }
     else if (isCrawlableFile(path)) { const file = await entry.getFile(); if (file.size <= CRAWL_MAX_BYTES) files.push({ path, text: await file.text() }); }
-  }
-  return files;
-}
-
-// Fetch a public GitHub repo's docs and specs from the browser: two API calls
-// (default branch, then the recursive tree) plus raw CDN reads for candidates.
-async function fetchRepoFiles(ref: RepoRef): Promise<CrawlFile[]> {
-  const api = `https://api.github.com/repos/${ref.owner}/${ref.repo}`;
-  let branch = ref.branch ?? "";
-  if (!branch) {
-    const meta = await fetch(api);
-    if (!meta.ok) throw new Error(meta.status === 403 ? "GitHub API rate limit reached" : `repository not found (${meta.status})`);
-    branch = String((await meta.json()).default_branch || "main");
-  }
-  const treeRes = await fetch(`${api}/git/trees/${encodeURIComponent(branch)}?recursive=1`);
-  if (!treeRes.ok) throw new Error(`could not read repository tree (${treeRes.status})`);
-  const tree = ((await treeRes.json()).tree || []) as any[];
-  const paths = selectRemoteCandidatePaths(tree);
-  const files: CrawlFile[] = [];
-  for (const path of paths) {
-    const raw = await fetch(`https://raw.githubusercontent.com/${ref.owner}/${ref.repo}/${branch}/${path.split("/").map(encodeURIComponent).join("/")}`);
-    if (raw.ok) files.push({ path, text: await raw.text() });
   }
   return files;
 }
