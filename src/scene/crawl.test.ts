@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isCrawlableFile, isRemoteCandidate, parseRepoUrl, synthesizeSource } from "./crawl.ts";
+import { CRAWL_MAX_BYTES, isCrawlableFile, isRemoteCandidate, parseRepoUrl, REMOTE_CANDIDATE_LIMIT, selectRemoteCandidatePaths, synthesizeSource } from "./crawl.ts";
 import { extractScene } from "./extract.ts";
 
 test("an OpenAPI spec wins over documentation", () => {
@@ -10,6 +10,16 @@ test("an OpenAPI spec wins over documentation", () => {
   ]);
   assert.match(result.source, /openapi: 3\.1\.0/);
   assert.match(result.summary, /openapi\.yaml/);
+});
+
+test("a Swagger spec wins over prose and nested OpenAPI files", () => {
+  const result = synthesizeSource([
+    { path: "README.md", text: "# Project\nSome prose about the project." },
+    { path: "docs/openapi.yaml", text: "openapi: 3.1.0\ninfo:\n  title: Docs\npaths:\n  /x:\n    get:\n      summary: Nested" },
+    { path: "swagger.yaml", text: "swagger: \"2.0\"\ninfo:\n  title: Root\npaths:\n  /x:\n    get:\n      summary: Root spec" },
+  ]);
+  assert.match(result.source, /swagger: "2\.0"/);
+  assert.match(result.summary, /swagger\.yaml/);
 });
 
 test("a README arrow diagram is chosen and extracts to real blocks", () => {
@@ -79,4 +89,26 @@ test("crawl filters skip vendored and lockfiles; remote narrows data files", () 
   assert.equal(isRemoteCandidate("config/tsconfig.json"), false);
   assert.equal(isRemoteCandidate("openapi.json"), true);
   assert.equal(isRemoteCandidate("README.md"), true);
+});
+
+test("remote candidate selection filters before the 80-item cap", () => {
+  const tree: Array<{ type: string; path?: string; size?: number }> = [
+    { type: "blob", path: "node_modules/pkg/readme.md", size: 128 },
+    { type: "tree", path: "docs" },
+    { type: "blob", path: "openapi.json", size: CRAWL_MAX_BYTES + 1 },
+    { type: "blob", path: "config/tsconfig.json", size: 128 },
+  ];
+  for (let index = 0; index < REMOTE_CANDIDATE_LIMIT + 5; index++) {
+    tree.push({
+      type: "blob",
+      path: `docs/file-${String(index).padStart(3, "0")}.md`,
+      size: 128,
+    });
+  }
+
+  const paths = selectRemoteCandidatePaths(tree);
+  assert.equal(paths.length, REMOTE_CANDIDATE_LIMIT);
+  assert.ok(paths.every((path) => isRemoteCandidate(path)));
+  assert.ok(paths.every((path) => path.startsWith("docs/file-")));
+  assert.ok(paths.includes(`docs/file-${String(REMOTE_CANDIDATE_LIMIT - 1).padStart(3, "0")}.md`));
 });

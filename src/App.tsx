@@ -5,7 +5,7 @@ import { standaloneHtml, standaloneSvg, standaloneWalkthrough } from "./scene/ex
 import { layoutScene } from "./scene/layout";
 import { PNG_SCALE, SCENE_HEIGHT, SCENE_WIDTH, sizedSvg, svgToDataUrl } from "./scene/raster";
 import { stepSpotlight, stepViewport, walkthroughSteps, type Viewport } from "./scene/walkthrough";
-import { CRAWL_MAX_BYTES, CRAWL_MAX_FILES, isCrawlableFile, isIgnoredDir, isRemoteCandidate, parseRepoUrl, synthesizeSource, type CrawlFile, type RepoRef } from "./scene/crawl";
+import { CRAWL_MAX_BYTES, CRAWL_MAX_FILES, isCrawlableFile, isIgnoredDir, parseRepoUrl, selectRemoteCandidatePaths, synthesizeSource, type CrawlFile, type RepoRef } from "./scene/crawl";
 import { T } from "./sceneStyles";
 import { editBlock, editEdge, type Audience, type SceneDocument, type SceneView } from "./scene/types";
 import { validateSceneDocument } from "./scene/validate";
@@ -48,7 +48,7 @@ async function fetchRepoFiles(ref: RepoRef): Promise<CrawlFile[]> {
   const treeRes = await fetch(`${api}/git/trees/${encodeURIComponent(branch)}?recursive=1`);
   if (!treeRes.ok) throw new Error(`could not read repository tree (${treeRes.status})`);
   const tree = ((await treeRes.json()).tree || []) as any[];
-  const paths = tree.filter((node) => node.type === "blob" && isRemoteCandidate(node.path) && (node.size ?? 0) <= CRAWL_MAX_BYTES).map((node) => node.path as string).slice(0, 80);
+  const paths = selectRemoteCandidatePaths(tree);
   const files: CrawlFile[] = [];
   for (const path of paths) {
     const raw = await fetch(`https://raw.githubusercontent.com/${ref.owner}/${ref.repo}/${branch}/${path.split("/").map(encodeURIComponent).join("/")}`);

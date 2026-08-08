@@ -75,3 +75,29 @@ test("inherited openapi and paths properties do not count as OpenAPI", () => {
   assert.equal(result.document.source.kind, "text");
   assert.notEqual(result.document.source.kind, "openapi");
 });
+
+test("repeated arrow lines with identical evidence keep distinct source offsets", () => {
+  const source = "A -> B: same line\nA -> B: same line";
+  const result = extractScene(source, "engineer");
+  const edgeFacts = result.document.edges.map((edge) => result.document.facts.find((fact) => fact.id === edge.factIds[0])!);
+  assert.equal(edgeFacts.length, 2);
+  assert.equal(edgeFacts[0].text, edgeFacts[1].text);
+  assert.notEqual(edgeFacts[0].start, edgeFacts[1].start);
+  assert.equal(source.slice(edgeFacts[0].start, edgeFacts[0].end), "A -> B: same line");
+  assert.equal(source.slice(edgeFacts[1].start, edgeFacts[1].end), "A -> B: same line");
+});
+
+test("OpenAPI JSON facts map escaped summaries to decoded text in the source", () => {
+  const summary = "Say \"hi\"\nand bye";
+  const source = JSON.stringify({
+    openapi: "3.1.0",
+    info: { title: "API" },
+    paths: { "/pets": { get: { tags: ["Pets"], summary } } },
+  });
+  const result = extractScene(source, "engineer");
+  const fact = result.document.facts.find((item) => item.text === summary)!;
+  const escaped = JSON.stringify(summary).slice(1, -1);
+  assert.equal(fact.text, summary);
+  assert.equal(source.indexOf(escaped), fact.start);
+  assert.equal(source.slice(fact.start, fact.end), escaped);
+});
