@@ -23,8 +23,6 @@ export const T = {
   edge: "#38424e",
 } as const;
 
-export const fontImport = `@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");`;
-
 const sans = `Inter, system-ui, sans-serif`;
 const mono = `"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
 
@@ -305,105 +303,5 @@ export const sceneCss = `
 .flow.walk-on .flow-label {
   fill: ${T.accent};
   font-weight: 600;
-}
-`;
-
-// Page chrome for the exported standalone HTML artifact, matching the app.
-export const standaloneCss = `
-${fontImport}
-
-body {
-  margin: 0;
-  background: ${T.bg};
-  color: ${T.text};
-  font-family: ${sans};
-  font-size: 15px;
-  line-height: 1.5;
-}
-
-main {
-  max-width: 1280px;
-  margin: auto;
-  padding: 28px;
-}
-
-h1 {
-  margin: 0 0 6px;
-  color: ${T.text};
-  font-family: ${sans};
-  font-size: 32px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-h2 {
-  margin: 0 0 10px;
-  color: ${T.accent};
-  font-family: ${mono};
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-p,
-li {
-  color: ${T.muted};
-}
-
-.scene {
-  border: 1px solid ${T.hairline};
-  border-radius: 12px;
-  background: ${T.bg};
-  overflow: hidden;
-}
-
-.scene svg {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-.meta {
-  display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.panel {
-  border: 1px solid ${T.hairline};
-  border-radius: 10px;
-  padding: 18px;
-  background: ${T.panel};
-}
-
-.panel li {
-  font-size: 13px;
-}
-
-.panel span {
-  display: inline-block;
-  border: 1px solid ${T.hairlineStrong};
-  border-radius: 999px;
-  padding: 4px 10px;
-  margin: 3px;
-  color: ${T.muted};
-  font-family: ${mono};
-  font-size: 11px;
-}
-
-@media (max-width: 780px) {
-  main {
-    padding: 14px;
-  }
-
-  .meta {
-    grid-template-columns: 1fr;
-  }
-
-  h1 {
-    font-size: 24px;
-  }
 }
 `;
