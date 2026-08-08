@@ -15,11 +15,13 @@ export function validateSceneDocument(value: unknown): Result {
   if (!v.source || !["text", "openapi"].includes(v.source.kind) || typeof v.source.text !== "string") return bad("source must contain kind and text");
   if (v.source.text.length > SCENE_LIMITS.source) return bad("source.text exceeds the size limit");
   for (const key of ["facts", "terms", "blocks", "edges", "warnings"]) if (!Array.isArray(v[key])) return bad(`${key} must be an array`);
-  for (const key of ["facts", "terms", "blocks", "edges"] as const) if (v[key].length > SCENE_LIMITS[key]) return bad(`${key} exceeds the size limit`);
+  for (const key of ["facts", "terms", "blocks", "edges", "warnings"] as const) if (v[key].length > SCENE_LIMITS[key]) return bad(`${key} exceeds the size limit`);
+  for (let i = 0; i < v.terms.length; i++) if (typeof v.terms[i] !== "string") return bad(`terms[${i}] must be a string`);
+  for (let i = 0; i < v.warnings.length; i++) if (typeof v.warnings[i] !== "string") return bad(`warnings[${i}] must be a string`);
   const factIds = new Set<string>();
   for (let i = 0; i < v.facts.length; i++) {
     const fact = v.facts[i];
-    if (!fact || typeof fact.id !== "string" || typeof fact.text !== "string" || !Number.isInteger(fact.start) || !Number.isInteger(fact.end) || fact.start < -1 || fact.end < fact.start) return bad(`facts[${i}] is invalid`);
+    if (!fact || typeof fact.id !== "string" || typeof fact.text !== "string" || !Number.isInteger(fact.start) || !Number.isInteger(fact.end) || !((fact.start === -1 && fact.end === -1) || (fact.start >= 0 && fact.end >= fact.start && fact.end <= v.source.text.length))) return bad(`facts[${i}] is invalid`);
     if (factIds.has(fact.id)) return bad(`facts[${i}].id must be unique`);
     factIds.add(fact.id);
   }

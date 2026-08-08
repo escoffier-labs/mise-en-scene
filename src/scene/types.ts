@@ -20,7 +20,7 @@ export type SceneDocument = {
   warnings: string[];
 };
 
-export const SCENE_LIMITS = { source: 1_000_000, facts: 12, terms: 12, blocks: 12, edges: 18 } as const;
+export const SCENE_LIMITS = { source: 1_000_000, facts: 12, terms: 12, blocks: 12, edges: 18, warnings: 12 } as const;
 
 export function slugId(value: string, used: Set<string>) {
   const root = value.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "item";
