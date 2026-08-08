@@ -1,6 +1,27 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { extractScene } from "./extract.ts";
+import { SCENE_LIMITS } from "./types.ts";
+import { validateSceneDocument } from "./validate.ts";
+
+test("arrow-heavy and OpenAPI-heavy extraction stay within model caps", () => {
+  const arrows = Array.from({ length: SCENE_LIMITS.facts + 2 }, (_, i) => `A -> B: step ${i}`).join("\n");
+  const arrowDoc = extractScene(arrows, "engineer").document;
+  assert.equal(arrowDoc.facts.length, SCENE_LIMITS.facts);
+  assert.ok(arrowDoc.blocks.length <= SCENE_LIMITS.blocks);
+  assert.ok(arrowDoc.edges.length <= SCENE_LIMITS.edges);
+  assert.equal(validateSceneDocument(arrowDoc).ok, true);
+
+  const paths: Record<string, object> = {};
+  for (let i = 0; i < SCENE_LIMITS.blocks; i++) {
+    paths[`/r${i}`] = { get: { tags: [`Tag${i}`], summary: `Read ${i}` } };
+  }
+  const openapiDoc = extractScene(JSON.stringify({ openapi: "3.1.0", info: { title: "Wide API" }, paths }), "engineer").document;
+  assert.ok(openapiDoc.blocks.length <= SCENE_LIMITS.blocks);
+  assert.ok(openapiDoc.facts.length <= SCENE_LIMITS.facts);
+  assert.ok(openapiDoc.edges.length <= SCENE_LIMITS.edges);
+  assert.equal(validateSceneDocument(openapiDoc).ok, true);
+});
 
 test("plain text arrows create source-specific blocks and evidence", () => {
   const source = "Browser -> API: sends request\nAPI -> Database: reads rows";

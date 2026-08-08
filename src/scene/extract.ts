@@ -39,7 +39,7 @@ function extractText(source: string, audience: Audience): ExtractionResult {
     return block;
   };
   for (const match of source.matchAll(/^\s*([^\n:>-][^\n]*?)\s*->\s*([^\n:]+?)\s*:\s*([^\n]+)\s*$/gm)) {
-    if (document.edges.length >= SCENE_LIMITS.edges) break;
+    if (document.edges.length >= SCENE_LIMITS.edges || document.facts.length >= SCENE_LIMITS.facts) break;
     const from = addBlock(match[1]); const to = addBlock(match[2]);
     if (!from || !to) continue;
     const start = match.index! + match[0].indexOf(match[1]); const text = match[0].trim();
@@ -100,9 +100,15 @@ function extractOpenApi(source: string, api: any, audience: Audience): Extractio
     if (!item || typeof item !== "object") continue;
     for (const method of methods) {
       const operation = item[method]; if (!operation || typeof operation !== "object") continue;
-      if (document.blocks.length >= SCENE_LIMITS.blocks || document.edges.length + 2 > SCENE_LIMITS.edges) break outer;
       const tagName = Array.isArray(operation.tags) && typeof operation.tags[0] === "string" ? operation.tags[0] : "Default";
       let tag = tags.get(tagName);
+      const blocksNeeded = (tag ? 0 : 1) + 1;
+      const edgesNeeded = (tag ? 0 : 1) + 1;
+      if (
+        document.blocks.length + blocksNeeded > SCENE_LIMITS.blocks
+        || document.edges.length + edgesNeeded > SCENE_LIMITS.edges
+        || document.facts.length >= SCENE_LIMITS.facts
+      ) break outer;
       if (!tag) { tag = block(tagName, "interface", usedBlocks); tags.set(tagName, tag); document.blocks.push(tag); document.edges.push(edge(apiBlock, tag, "groups", [], usedEdges)); }
       const label = `${method.toUpperCase()} ${path}`; const op = block(label, "step", usedBlocks); const text = operation.summary || operation.description || label;
       const offset = typeof text === "string" ? factOffset(source, text) : -1;
