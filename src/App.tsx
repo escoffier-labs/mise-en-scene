@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SceneSvg } from "./components/SceneSvg";
 import { extractScene } from "./scene/extract";
 import { standaloneHtml, standaloneSvg, standaloneWalkthrough } from "./scene/exports";
@@ -8,11 +8,13 @@ import { provenanceNarrative } from "./scene/provenance";
 import { PNG_SCALE, SCENE_HEIGHT, SCENE_WIDTH, sizedSvg, svgToDataUrl } from "./scene/raster";
 import { stepSpotlight, walkthroughSteps, type Viewport } from "./scene/walkthrough";
 import { planWalkthroughFrames } from "./scene/walkthroughPlan";
-import { CRAWL_MAX_BYTES, CRAWL_MAX_FILES, isCrawlableFile, isIgnoredDir, parseRepoUrl, synthesizeSource, type CrawlFile } from "./scene/crawl";
+import { formatControlState, type EncodeCapabilities, type WalkthroughVideoFormat } from "./scene/walkthroughEncode";
+import { CRAWL_MAX_BYTES, CRAWL_MAX_FILES, isCrawlableFile, isIgnoredDir, parseRepoUrl, selectRemoteCandidatePaths, synthesizeSource, type CrawlFile, type RepoRef } from "./scene/crawl";
 import { fetchRepoFiles } from "./scene/github";
 import { T } from "./sceneStyles";
 import { CONFIDENCE_LEVELS, editBlock, editEdge, type Audience, type Confidence, type SceneDocument, type SceneView } from "./scene/types";
 import { validateSceneDocument } from "./scene/validate";
+import { encodeWalkthroughVideo, isVideoExportSupported, probeWalkthroughEncodeCapabilities } from "./walkthroughRecorder";
 
 const sampleSource = `# Checkout system
 Customer -> Web app: starts checkout
@@ -47,10 +49,22 @@ export default function App() {
   const [review, setReview] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [notice, setNotice] = useState("Ready");
+  const [encodeCaps, setEncodeCaps] = useState<EncodeCapabilities | null>(null);
   const sourceRef = useRef<HTMLTextAreaElement>(null);
   const scene = useMemo(() => layoutScene(document, document.view), [document]);
   const selected = selection?.type === "block" ? document.blocks.find((x) => x.id === selection.id) : selection?.type === "edge" ? document.edges.find((x) => x.id === selection.id) : undefined;
   const selectedFacts = selected ? document.facts.filter((fact) => selected.factIds.includes(fact.id)) : [];
+  const videoFormats = encodeCaps ? formatControlState(encodeCaps) : { webm: false, mp4: false };
+
+  useEffect(() => {
+    let cancelled = false;
+    void probeWalkthroughEncodeCapabilities()
+      .then((caps) => { if (!cancelled) setEncodeCaps(caps); })
+      .catch(() => {
+        if (!cancelled) setEncodeCaps({ mediabunnyVp9Webm: false, mediabunnyAvcMp4: false, mediaRecorderWebm: false });
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   function regenerate(next: string, audience = document.audience) {
     if (dirty && !window.confirm("Regenerate the scene and discard manual edits?")) return false;
@@ -120,15 +134,14 @@ export default function App() {
       saveBlob("mise-en-scene.png",blob); setNotice("mise-en-scene.png exported");
     } catch (error) { setNotice(`PNG export failed: ${error instanceof Error ? error.message : "unknown error"}`); }
   }
-  async function recordWalkthrough() {
-    const Recorder=(globalThis as any).MediaRecorder;
-    const probe=globalThis.document.createElement("canvas");
-    const mediaSupported = typeof Recorder !== "undefined" && typeof (probe as any).captureStream === "function";
+  async function recordWalkthrough(format: WalkthroughVideoFormat) {
+    const caps = encodeCaps ?? await probeWalkthroughEncodeCapabilities();
+    if (!encodeCaps) setEncodeCaps(caps);
+    const mediaSupported = isVideoExportSupported(caps);
     const gate = await prepareVideoRasterExport({ mediaSupported });
     if (!gate.ok) { setNotice(gate.notice); return; }
-    const mime=["video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm"].find((t)=>Recorder.isTypeSupported?.(t)) || "video/webm";
     try {
-      setNotice("Recording walkthrough...");
+      setNotice(format === "mp4" ? "Encoding walkthrough (MP4)..." : "Encoding walkthrough...");
       const steps=walkthroughSteps(scene);
       const plan=planWalkthroughFrames(scene);
       // Each step is rasterized once at full frame (spotlight baked in); the
@@ -137,17 +150,20 @@ export default function App() {
       const canvas=globalThis.document.createElement("canvas"); canvas.width=SCENE_WIDTH; canvas.height=SCENE_HEIGHT;
       const ctx=canvas.getContext("2d"); if (!ctx) throw new Error("canvas is unavailable");
       const drawCrop=(img: HTMLImageElement, v: Viewport)=>{ ctx.fillStyle=T.bg; ctx.fillRect(0,0,SCENE_WIDTH,SCENE_HEIGHT); ctx.drawImage(img,v.x,v.y,v.w,v.h,0,0,SCENE_WIDTH,SCENE_HEIGHT); };
-      const stream=(canvas as any).captureStream(plan.fps); const recorder=new Recorder(stream,{mimeType:mime}); const chunks: Blob[]=[];
-      recorder.ondataavailable=(e:any)=>{ if (e.data?.size) chunks.push(e.data); };
-      const finished=new Promise<Blob>((resolve)=>{ recorder.onstop=()=>resolve(new Blob(chunks,{type:mime})); });
-      recorder.start();
-      for (const frame of plan.frames) {
-        drawCrop(images[frame.stepIndex], frame.viewport);
-        await sleep(frame.durationMs);
-      }
-      recorder.stop();
-      saveBlob("mise-en-scene-walkthrough.webm",await finished); setNotice("mise-en-scene-walkthrough.webm recorded");
-    } catch (error) { setNotice(`Video recording failed: ${error instanceof Error ? error.message : "unknown error"}`); }
+      const result = await encodeWalkthroughVideo({
+        format,
+        plan,
+        images,
+        canvas,
+        drawCrop,
+        sleep,
+        probeCaps: async () => caps,
+        onProgress: setNotice,
+      });
+      if (!result.ok) { setNotice(result.notice); return; }
+      saveBlob(result.filename, result.blob);
+      setNotice(`${result.filename} exported`);
+    } catch (error) { setNotice(`Video encoding failed: ${error instanceof Error ? error.message : "unknown error"}`); }
   }
   async function importFile(file?: File) {
     if (!file) return;
@@ -165,7 +181,8 @@ export default function App() {
         <button disabled={!canExport} onClick={()=>download("mise-en-scene.json",JSON.stringify(scene,null,2),"application/json")}>Export JSON</button>
         <button disabled={!canExport} onClick={()=>download("mise-en-scene-provenance.txt",provenanceNarrative(scene),"text/plain")}>Export provenance</button>
         <button disabled={!canExport} onClick={()=>download("mise-en-scene-walkthrough.html",standaloneWalkthrough(scene),"text/html")}>Walkthrough</button>
-        <button disabled={!canExport} onClick={()=>void recordWalkthrough()}>Record video</button>
+        <button disabled={!canExport || !videoFormats.webm} onClick={()=>void recordWalkthrough("webm")} title={videoFormats.webm ? "Encode VP9 WebM when capable, else MediaRecorder WebM" : "WebM encoding unavailable in this browser"}>Record WebM</button>
+        <button disabled={!canExport || !videoFormats.mp4} onClick={()=>void recordWalkthrough("mp4")} title={videoFormats.mp4 ? "Encode AVC MP4 via MediaBunny" : "MP4 encoding unavailable in this browser"}>Record MP4</button>
         <button className="primary" disabled={!canExport} onClick={()=>download("mise-en-scene.html",standaloneHtml(scene),"text/html")}>Export HTML</button>
       </div></header>
     <section className="workspace">
