@@ -6,7 +6,8 @@ import { layoutScene } from "./scene/layout";
 import { preparePngRasterExport, prepareVideoRasterExport } from "./scene/foreignObjectRaster";
 import { provenanceNarrative } from "./scene/provenance";
 import { PNG_SCALE, SCENE_HEIGHT, SCENE_WIDTH, sizedSvg, svgToDataUrl } from "./scene/raster";
-import { stepSpotlight, stepViewport, walkthroughSteps, type Viewport } from "./scene/walkthrough";
+import { stepSpotlight, walkthroughSteps, type Viewport } from "./scene/walkthrough";
+import { planWalkthroughFrames } from "./scene/walkthroughPlan";
 import { CRAWL_MAX_BYTES, CRAWL_MAX_FILES, isCrawlableFile, isIgnoredDir, parseRepoUrl, synthesizeSource, type CrawlFile } from "./scene/crawl";
 import { fetchRepoFiles } from "./scene/github";
 import { T } from "./sceneStyles";
@@ -129,26 +130,21 @@ export default function App() {
     try {
       setNotice("Recording walkthrough...");
       const steps=walkthroughSteps(scene);
+      const plan=planWalkthroughFrames(scene);
       // Each step is rasterized once at full frame (spotlight baked in); the
-      // camera move is a canvas crop of that bitmap, so the pan and zoom are
-      // smooth without re-rasterizing per frame.
-      const frames=await Promise.all(steps.map((step)=>loadImage(svgToDataUrl(sizedSvg(standaloneSvg(scene,false,stepSpotlight(step)))))));
-      const views=steps.map((step)=>stepViewport(scene,step));
+      // camera move is a canvas crop of that bitmap driven by the frame plan.
+      const images=await Promise.all(steps.map((step)=>loadImage(svgToDataUrl(sizedSvg(standaloneSvg(scene,false,stepSpotlight(step)))))));
       const canvas=globalThis.document.createElement("canvas"); canvas.width=SCENE_WIDTH; canvas.height=SCENE_HEIGHT;
       const ctx=canvas.getContext("2d"); if (!ctx) throw new Error("canvas is unavailable");
       const drawCrop=(img: HTMLImageElement, v: Viewport)=>{ ctx.fillStyle=T.bg; ctx.fillRect(0,0,SCENE_WIDTH,SCENE_HEIGHT); ctx.drawImage(img,v.x,v.y,v.w,v.h,0,0,SCENE_WIDTH,SCENE_HEIGHT); };
-      const lerp=(a: Viewport,b: Viewport,e: number): Viewport=>({ x:a.x+(b.x-a.x)*e, y:a.y+(b.y-a.y)*e, w:a.w+(b.w-a.w)*e, h:a.h+(b.h-a.h)*e });
-      const easeInOut=(t: number)=> t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
-      const pan=async (img: HTMLImageElement,from: Viewport,to: Viewport,ms: number)=>{ const n=Math.max(1,Math.round(ms/33)); for (let f=1;f<=n;f++){ drawCrop(img,lerp(from,to,easeInOut(f/n))); await sleep(33); } };
-      const hold=async (img: HTMLImageElement,v: Viewport,ms: number)=>{ drawCrop(img,v); await sleep(ms); };
-      const stream=(canvas as any).captureStream(30); const recorder=new Recorder(stream,{mimeType:mime}); const chunks: Blob[]=[];
+      const stream=(canvas as any).captureStream(plan.fps); const recorder=new Recorder(stream,{mimeType:mime}); const chunks: Blob[]=[];
       recorder.ondataavailable=(e:any)=>{ if (e.data?.size) chunks.push(e.data); };
       const finished=new Promise<Blob>((resolve)=>{ recorder.onstop=()=>resolve(new Blob(chunks,{type:mime})); });
       recorder.start();
-      let prev=views[0];
-      await hold(frames[0],views[0],2000); // opening on the full scene
-      for (let k=1;k<steps.length;k++){ await pan(frames[k],prev,views[k],650); await hold(frames[k],views[k],1200); prev=views[k]; }
-      await pan(frames[0],prev,views[0],650); await hold(frames[0],views[0],1200); // pull back to close
+      for (const frame of plan.frames) {
+        drawCrop(images[frame.stepIndex], frame.viewport);
+        await sleep(frame.durationMs);
+      }
       recorder.stop();
       saveBlob("mise-en-scene-walkthrough.webm",await finished); setNotice("mise-en-scene-walkthrough.webm recorded");
     } catch (error) { setNotice(`Video recording failed: ${error instanceof Error ? error.message : "unknown error"}`); }
