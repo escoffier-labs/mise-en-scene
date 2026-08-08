@@ -8,7 +8,7 @@ import { PNG_SCALE, SCENE_HEIGHT, SCENE_WIDTH, sizedSvg, svgToDataUrl } from "./
 import { stepSpotlight, stepViewport, walkthroughSteps, type Viewport } from "./scene/walkthrough";
 import { CRAWL_MAX_BYTES, CRAWL_MAX_FILES, isCrawlableFile, isIgnoredDir, parseRepoUrl, selectRemoteCandidatePaths, synthesizeSource, type CrawlFile, type RepoRef } from "./scene/crawl";
 import { T } from "./sceneStyles";
-import { editBlock, editEdge, type Audience, type SceneDocument, type SceneView } from "./scene/types";
+import { CONFIDENCE_LEVELS, editBlock, editEdge, type Audience, type Confidence, type SceneDocument, type SceneView } from "./scene/types";
 import { validateSceneDocument } from "./scene/validate";
 
 const sampleSource = `# Checkout system
@@ -113,6 +113,12 @@ export default function App() {
     setDocument((current) => selection.type === "block" ? editBlock(current, selection.id, { [field]: value }) : editEdge(current, selection.id, value));
     setDirty(true); setNotice("Manual edits not yet exported");
   }
+  function updateAnalytic(field: "confidence" | "competingHypothesis", value: Confidence | boolean | undefined) {
+    if (!selection) return;
+    const patch = { [field]: value } as { confidence?: Confidence; competingHypothesis?: boolean };
+    setDocument((current) => selection.type === "block" ? editBlock(current, selection.id, patch) : editEdge(current, selection.id, patch));
+    setDirty(true); setNotice("Manual edits not yet exported");
+  }
   function chooseFact(start: number, end: number) { if (start < 0 || end < start) return; sourceRef.current?.focus(); sourceRef.current?.setSelectionRange(start, end); }
   function saveBlob(filename: string, blob: Blob) {
     const url=URL.createObjectURL(blob); const link=globalThis.document.createElement("a"); link.href=url; link.download=filename; link.click(); URL.revokeObjectURL(url);
@@ -194,7 +200,7 @@ export default function App() {
       </aside>
       <section className="artifact-workbench"><div className="view-controls" aria-label="Scene view"><button className={document.view==="architecture"?"active":""} onClick={()=>setView("architecture")}>Architecture</button><button className={document.view==="sequence"?"active":""} onClick={()=>setView("sequence")}>Sequence</button><button className={review?"active":""} aria-pressed={review} onClick={()=>setReview((v)=>!v)}>Review evidence</button></div>
         <section className="stage-panel"><div className="stage"><SceneSvg scene={scene} selectedId={selection?.id} review={review} onSelect={select}/></div></section>
-        <section className="detail-rail"><div className="rail-card inspector"><h2>Selected element</h2>{selected ? <><label>Label<input value={selected.label} onChange={(e)=>updateSelected("label",e.target.value)}/></label>{selection?.type==="block"&&<label>Detail<textarea value={"detail" in selected?selected.detail:""} onChange={(e)=>updateSelected("detail",e.target.value)}/></label>}</>:<p>Select a block or relationship.</p>}</div>
+        <section className="detail-rail"><div className="rail-card inspector"><h2>Selected element</h2>{selected ? <><label>Label<input value={selected.label} onChange={(e)=>updateSelected("label",e.target.value)}/></label>{selection?.type==="block"&&<label>Detail<textarea value={"detail" in selected?selected.detail:""} onChange={(e)=>updateSelected("detail",e.target.value)}/></label>}{review&&<><label>Confidence<select value={selected.confidence ?? ""} onChange={(e)=>updateAnalytic("confidence", (e.target.value || undefined) as Confidence | undefined)}><option value="">Unset</option>{CONFIDENCE_LEVELS.map((level)=><option key={level} value={level}>{level}</option>)}</select></label><label className="checkbox"><input type="checkbox" checked={!!selected.competingHypothesis} onChange={(e)=>updateAnalytic("competingHypothesis", e.target.checked || undefined)}/> Competing hypothesis</label></>}</>:<p>Select a block or relationship.</p>}</div>
           <div className="rail-card"><h2>Evidence</h2>{selectedFacts.length?<ol>{selectedFacts.map((fact)=><li key={fact.id}><button className="evidence" disabled={fact.start<0} onClick={()=>chooseFact(fact.start,fact.end)}>{fact.text}</button></li>)}</ol>:<p>No direct source evidence attached.</p>}</div>
           <div className="rail-card terms-card"><h2>Terms</h2><div className="term-list">{document.terms.map((term)=><span key={term} title={term}>{term}</span>)}</div></div>
         </section>

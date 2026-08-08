@@ -304,4 +304,32 @@ export const sceneCss = `
   fill: ${T.accent};
   font-weight: 600;
 }
+
+/* Review-mode analytic marks: confidence (H/M/L) and competing-hypothesis (?).
+   Only rendered when the Review evidence toggle is on. */
+.review-mark {
+  fill: ${T.accent};
+  font-family: ${mono};
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  paint-order: stroke;
+  stroke: ${T.bg};
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.review-mark.competing {
+  fill: ${T.hover};
+}
+.flow.confidence-low path,
+.scene-block.confidence-low .card-rect {
+  stroke-dasharray: 5 4;
+}
+.flow.competing-hypothesis path {
+  stroke: ${T.hover};
+}
+.scene-block.competing-hypothesis .card-rect {
+  stroke: ${T.hover};
+  stroke-dasharray: 3 3;
+}
 `;

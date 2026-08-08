@@ -304,3 +304,72 @@ test("rejects invalid edges", () => {
     assert.deepEqual(validateSceneDocument(mutate(patch)), { ok: false, error }, label);
   }
 });
+
+
+test("accepts optional edge and block confidence and competingHypothesis", () => {
+  const value = fixture();
+  value.edges[0].confidence = "high";
+  value.edges[0].competingHypothesis = true;
+  value.blocks[0].confidence = "medium";
+  value.blocks[1].competingHypothesis = false;
+  const result = validateSceneDocument(value);
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.value.edges[0].confidence, "high");
+  assert.equal(result.value.edges[0].competingHypothesis, true);
+  assert.equal(result.value.blocks[0].confidence, "medium");
+  assert.equal(result.value.blocks[1].competingHypothesis, false);
+});
+
+test("accepts all supported confidence levels", () => {
+  for (const confidence of ["high", "medium", "low"] as const) {
+    assert.equal(
+      validateSceneDocument(mutate((v) => { v.edges[0].confidence = confidence; })).ok,
+      true,
+      `edge confidence ${confidence}`,
+    );
+    assert.equal(
+      validateSceneDocument(mutate((v) => { v.blocks[0].confidence = confidence; })).ok,
+      true,
+      `block confidence ${confidence}`,
+    );
+  }
+});
+
+test("rejects unsupported confidence values", () => {
+  assert.deepEqual(
+    validateSceneDocument(mutate((v) => { v.edges[0].confidence = "certain"; })),
+    { ok: false, error: "edges[0].confidence is unsupported" },
+  );
+  assert.deepEqual(
+    validateSceneDocument(mutate((v) => { v.blocks[0].confidence = "certain"; })),
+    { ok: false, error: "blocks[0].confidence is unsupported" },
+  );
+});
+
+test("rejects non-boolean competingHypothesis", () => {
+  assert.deepEqual(
+    validateSceneDocument(mutate((v) => { v.edges[0].competingHypothesis = "yes"; })),
+    { ok: false, error: "edges[0].competingHypothesis must be a boolean" },
+  );
+  assert.deepEqual(
+    validateSceneDocument(mutate((v) => { v.blocks[0].competingHypothesis = 1; })),
+    { ok: false, error: "blocks[0].competingHypothesis must be a boolean" },
+  );
+});
+
+test("JSON round-trip preserves confidence and competingHypothesis", () => {
+  const value = fixture();
+  value.edges[0].confidence = "low";
+  value.edges[0].competingHypothesis = true;
+  value.blocks[0].confidence = "high";
+  value.blocks[0].competingHypothesis = true;
+  const parsed = JSON.parse(JSON.stringify(value));
+  const result = validateSceneDocument(parsed);
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.deepEqual(result.value.edges[0].confidence, "low");
+  assert.deepEqual(result.value.edges[0].competingHypothesis, true);
+  assert.deepEqual(result.value.blocks[0].confidence, "high");
+  assert.deepEqual(result.value.blocks[0].competingHypothesis, true);
+});

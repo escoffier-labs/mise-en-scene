@@ -506,3 +506,6 @@ button:disabled {
     min-width: 920px;
   }
 }
+
+label.checkbox{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted,#9aa4b2)}
+label.checkbox input{width:auto}
