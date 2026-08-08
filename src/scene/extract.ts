@@ -93,10 +93,13 @@ function parseOpenApi(source: string): any | null {
 
 // Prefer the verbatim source offset (YAML and unescaped JSON), then fall back to
 // the JSON-escaped form (quoted JSON strings with escapes).
-function factOffset(source: string, text: string): number {
+function factOffset(source: string, text: string): { start: number; end: number } {
   const raw = source.indexOf(text);
-  if (raw >= 0) return raw;
-  return source.indexOf(JSON.stringify(text).slice(1, -1));
+  if (raw >= 0) return { start: raw, end: raw + text.length };
+  const escaped = JSON.stringify(text).slice(1, -1);
+  const escapedStart = source.indexOf(escaped);
+  if (escapedStart >= 0) return { start: escapedStart, end: escapedStart + escaped.length };
+  return { start: -1, end: -1 };
 }
 
 function extractOpenApi(source: string, api: any, audience: Audience): ExtractionResult {
@@ -119,8 +122,8 @@ function extractOpenApi(source: string, api: any, audience: Audience): Extractio
       ) break outer;
       if (!tag) { tag = block(tagName, "interface", usedBlocks); tags.set(tagName, tag); document.blocks.push(tag); document.edges.push(edge(apiBlock, tag, "groups", [], usedEdges)); }
       const label = `${method.toUpperCase()} ${path}`; const op = block(label, "step", usedBlocks); const text = operation.summary || operation.description || label;
-      const offset = typeof text === "string" ? factOffset(source, text) : -1;
-      const fact: SceneFact = { id: slugId(`fact-${text}`, usedFacts), text: String(text), start: offset, end: offset < 0 ? -1 : offset + String(text).length };
+      const offset = typeof text === "string" ? factOffset(source, text) : { start: -1, end: -1 };
+      const fact: SceneFact = { id: slugId(`fact-${text}`, usedFacts), text: String(text), start: offset.start, end: offset.end };
       document.facts.push(fact); op.detail = fact.text; op.factIds = [fact.id]; document.blocks.push(op); document.edges.push(edge(tag, op, method.toUpperCase(), [fact.id], usedEdges));
       document.terms.push(tagName, ...String(path).match(/\{([^}]+)\}/g) ?? []);
     }

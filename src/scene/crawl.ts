@@ -13,6 +13,9 @@ export type RepoRef = { owner: string; repo: string; branch?: string };
 
 export const CRAWL_MAX_FILES = 200;
 export const CRAWL_MAX_BYTES = 512 * 1024;
+export const REMOTE_CANDIDATE_LIMIT = 80;
+
+export type TreeBlob = { type: string; path?: string; size?: number };
 
 const IGNORED_DIRS = new Set(["node_modules", ".git", "dist", "build", "out", "vendor", "coverage", ".next", ".cache", ".vercel"]);
 const DOC_EXT = /\.(md|markdown|rst|txt)$/i;
@@ -37,6 +40,13 @@ export function isRemoteCandidate(path: string): boolean {
   if (!isCrawlableFile(path)) return false;
   if (DOC_EXT.test(path)) return true;
   return /(openapi|swagger|api|spec)/i.test(path) || !path.includes("/");
+}
+
+export function selectRemoteCandidatePaths(tree: TreeBlob[]): string[] {
+  return tree
+    .filter((node) => node.type === "blob" && node.path && isRemoteCandidate(node.path) && (node.size ?? 0) <= CRAWL_MAX_BYTES)
+    .map((node) => node.path as string)
+    .slice(0, REMOTE_CANDIDATE_LIMIT);
 }
 
 export function parseRepoUrl(input: string): RepoRef | null {
