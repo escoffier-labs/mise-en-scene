@@ -1,9 +1,10 @@
-import { SCENE_LIMITS, type Audience, type BlockKind, type SceneDocument, type SceneView } from "./types.ts";
+import { CONFIDENCE_LEVELS, SCENE_LIMITS, type Audience, type BlockKind, type Confidence, type SceneDocument, type SceneView } from "./types.ts";
 
 type Result = { ok: true; value: SceneDocument } | { ok: false; error: string };
 const audiences: Audience[] = ["engineer", "exec", "student", "customer"];
 const views: SceneView[] = ["architecture", "sequence"];
 const kinds: BlockKind[] = ["actor", "service", "store", "interface", "step", "source"];
+const confidences: Confidence[] = [...CONFIDENCE_LEVELS];
 
 export function validateSceneDocument(value: unknown): Result {
   if (!value || typeof value !== "object") return bad("document must be an object");
@@ -32,6 +33,8 @@ export function validateSceneDocument(value: unknown): Result {
     if (blockIds.has(block.id)) return bad(`blocks[${i}].id must be unique`);
     for (const field of ["x", "y", "w", "h"]) if (!Number.isFinite(block[field]) || ((field === "w" || field === "h") && block[field] <= 0)) return bad(`blocks[${i}].${field} is invalid`);
     for (const id of block.factIds) if (!factIds.has(id)) return bad(`blocks[${i}].factIds references an unknown fact`);
+    const analytic = validateAnalyticFields(block, `blocks[${i}]`);
+    if (!analytic.ok) return analytic;
     blockIds.add(block.id);
   }
   const edgeIds = new Set<string>();
@@ -42,9 +45,21 @@ export function validateSceneDocument(value: unknown): Result {
     if (!blockIds.has(edge.from)) return bad(`edges[${i}].from references an unknown block`);
     if (!blockIds.has(edge.to)) return bad(`edges[${i}].to references an unknown block`);
     for (const id of edge.factIds) if (!factIds.has(id)) return bad(`edges[${i}].factIds references an unknown fact`);
+    const analytic = validateAnalyticFields(edge, `edges[${i}]`);
+    if (!analytic.ok) return analytic;
     edgeIds.add(edge.id);
   }
   return { ok: true, value: value as SceneDocument };
+}
+
+function validateAnalyticFields(item: { confidence?: unknown; competingHypothesis?: unknown }, path: string): Result | { ok: true } {
+  if (item.confidence !== undefined && !confidences.includes(item.confidence as Confidence)) {
+    return bad(`${path}.confidence is unsupported`);
+  }
+  if (item.competingHypothesis !== undefined && typeof item.competingHypothesis !== "boolean") {
+    return bad(`${path}.competingHypothesis must be a boolean`);
+  }
+  return { ok: true };
 }
 
 function bad(error: string): Result { return { ok: false, error }; }
