@@ -4,7 +4,7 @@
 
 **Architecture:** Pure TypeScript modules own the versioned document, extraction, validation, and layout. React owns studio state and rendering. The live studio and all exports continue to use one `SceneSvg` renderer.
 
-**Key tech:** React 19, TypeScript 5.7, Vite 6, Node 22 built-in test runner.
+**Key tech:** React 19, TypeScript 7, Vite 6, Node 22 built-in test runner.
 
 Execute task-by-task, tracking these checkboxes. Every behavior begins with a focused failing test and each task ends with a commit.
 
@@ -56,7 +56,7 @@ test("rejects dangling endpoints without replacing the document", () => {
 - [x] Implement `extractScene(source, audience): ExtractionResult`. Parse arrow lines first, Markdown headings and bullets second, sentence facts third, then repeated backtick/capitalized terms. Preserve source order, enforce limits, and return the three-block fallback when fewer than two blocks or no edge exists.
 - [x] Write failing OpenAPI tests for tagged operations, missing tags, malformed path entries, operation caps, and a valid document with no operations.
 - [x] Run `npm test -- --test-name-pattern="OpenAPI"`; expect the first OpenAPI assertion to fail.
-- [x] Add OpenAPI JSON detection and extraction. Create API, tag, and operation blocks; connect them in source order; derive facts from summary/description and terms from tags, parameters, and `$ref` schema tails. Skip unsupported values and fall back with a warning when no operations exist.
+- [x] Add OpenAPI JSON and YAML detection and extraction via the isolated parser in `src/scene/yaml.ts`. Create API, tag, and operation blocks, connect them in source order, then derive facts from summary/description and terms from tags, parameters, and `$ref` schema tails. Skip unsupported values and fall back with a warning when no operations exist.
 - [x] Run `npm test`; expect extraction and validation tests to pass.
 - [x] Commit with `git add src/scene && git commit -m "feat: extract source-grounded scenes"`.
 
@@ -97,9 +97,9 @@ test("rejects dangling endpoints without replacing the document", () => {
 
 **Files:** Modify `README.md`, `CHANGELOG.md`, `AGENTS.md`; update plan checkboxes.
 
-- [x] Update the README jobs, limitations, export descriptions, and code layout to match the delivered implementation. Document OpenAPI JSON, the text arrow grammar, JSON round trips, offline HTML, and static SVG.
+- [x] Update the README jobs, limitations, export descriptions, and code layout to match the delivered implementation. Document OpenAPI JSON and YAML, the text arrow grammar, JSON round trips, offline HTML, and static SVG.
 - [x] Record all seven capabilities under `CHANGELOG.md` Unreleased. Update `AGENTS.md` with the new module boundaries and test gate.
-- [x] Start `npm run dev`, then verify in a browser: plain-text arrows create source-specific nodes; OpenAPI JSON creates tag and operation nodes; evidence selection highlights text; edits persist across view changes; invalid import is non-destructive; valid JSON reimports; architecture and sequence differ; HTML interactions work offline; SVG opens and contains no script.
+- [x] Start `npm run dev`, then verify in a browser that plain-text arrows create source-specific nodes, OpenAPI JSON and YAML create tag and operation nodes, evidence selection highlights text, edits persist across view changes, invalid import is non-destructive, valid JSON reimports, architecture and sequence differ, HTML interactions work offline, and SVG opens without a script.
 - [x] Run `./scripts/verify`; expect Node tests to pass followed by a successful TypeScript and Vite production build.
 - [x] Mark every completed checkbox in this plan and commit with `git commit -am "docs: document structured scene workflow"`.
 

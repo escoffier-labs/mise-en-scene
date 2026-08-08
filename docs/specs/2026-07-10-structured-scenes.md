@@ -11,8 +11,10 @@ ingestion, and distinct architecture and sequence layouts.
 
 - The studio remains browser-local. It gains no accounts, backend, crawler, model
   API, telemetry, or network-dependent extraction.
-- No new runtime dependency is required. JSON OpenAPI documents are supported in
-  this version; YAML remains plain-text input.
+- No new runtime dependency is required. OpenAPI JSON and YAML are supported via
+  JSON parsing and an isolated hand-rolled YAML parser in `src/scene/yaml.ts`
+  scoped to the OpenAPI subset. Unsupported YAML or non-OpenAPI input falls back
+  to plain-text extraction.
 - Existing stored source, audience, and mode preferences remain valid.
 - Imported scene files are treated as untrusted data and validated before use.
 - The current sample remains available, but its scene is generated through the
@@ -23,11 +25,12 @@ ingestion, and distinct architecture and sequence layouts.
 The application is split into five focused layers:
 
 1. `src/scene/types.ts` defines a versioned scene document and validation result.
-2. `src/scene/extract.ts` detects OpenAPI JSON or plain text and returns normalized
-   entities, relationships, facts, and evidence ranges.
+2. `src/scene/extract.ts` detects OpenAPI JSON or YAML (via `src/scene/yaml.ts`)
+   or plain text and returns normalized entities, relationships, facts, and
+   evidence ranges.
 3. `src/scene/layout.ts` maps normalized content into architecture or sequence
    coordinates without changing semantic IDs.
-4. `src/scene/export.tsx` renders standalone HTML and serializes SVG from the same
+4. `src/scene/exports.tsx` renders standalone HTML and serializes SVG from the same
    `SceneSvg` component used by the studio.
 5. React components own interaction only: source entry, selected-element editing,
    import feedback, layout mode, and export actions.
@@ -55,6 +58,7 @@ type SceneDocument = {
   terms: string[];
   blocks: SceneBlock[];
   edges: SceneEdge[];
+  warnings: string[];
 };
 
 type SceneFact = {
@@ -83,6 +87,7 @@ type SceneEdge = {
   label: string;
   factIds: string[];
   dashed?: boolean;
+  order?: number;
 };
 ```
 
@@ -117,11 +122,13 @@ Extraction returns at most 12 blocks, 18 edges, 12 facts, and 12 terms. Excess
 items are dropped deterministically in source order so the fixed canvas remains
 readable.
 
-## OpenAPI JSON extraction
+## OpenAPI extraction
 
-Input is classified as OpenAPI only when JSON parsing succeeds and the root has
-an `openapi` string plus a `paths` object. Invalid JSON remains plain text rather
-than becoming an import error.
+Input is classified as OpenAPI when JSON or YAML parsing succeeds and the root
+has an `openapi` string plus a `paths` object. The YAML path is gated by
+`openapi:` and `paths:` line signatures before `src/scene/yaml.ts` runs. A parse
+failure or non-object result falls back to plain-text extraction rather than
+becoming an import error. Invalid JSON follows the same fallback path.
 
 The parser creates:
 
@@ -230,8 +237,8 @@ Add `npm test` using TypeScript compilation into a temporary test output folder
 and `node --test`. Tests cover:
 
 - plain-text arrows, headings, stable IDs, offsets, caps, and fallback behavior;
-- OpenAPI detection, tagged and untagged operations, malformed path items, and
-  empty specifications;
+- OpenAPI JSON and YAML detection, tagged and untagged operations, malformed path
+  items, empty specifications, and YAML fallback behavior.
 - scene validation, duplicate IDs, broken references, size limits, and schema
   versions;
 - architecture and sequence coordinate stability;
