@@ -28,11 +28,14 @@
 
 ## Install
 
+Requires Node.js 22 or newer.
+
 ```bash
 git clone https://github.com/escoffier-labs/mise-en-scene.git
 cd mise-en-scene
-# follow package.json scripts for studio dev server
-npm install && npm run dev
+npm install
+./scripts/verify
+npm run dev
 ```
 
 ## What it does

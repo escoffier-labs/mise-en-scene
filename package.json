@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5215",
     "test": "node --experimental-strip-types --test \"src/**/*.test.ts\"",
