@@ -132,7 +132,7 @@ orchestration pipeline and its sidecars.
 - `src/walkthroughRecorder.ts`: browser walkthrough encode (MediaBunny + MediaRecorder).
 - `src/components/SceneSvg.tsx`: shared architecture and sequence renderer.
 - `src/scene/types.ts`: versioned scene model and editing helpers.
-- `src/scene/extract.ts`: plain-text and OpenAPI (JSON and YAML) extraction.
+- `src/scene/extract.ts`: plain-text, incident-report templates, and OpenAPI (JSON and YAML) extraction.
 - `src/scene/yaml.ts`: dependency-free YAML parser scoped to the OpenAPI subset.
 - `src/scene/crawl.ts`: repository crawling, file selection, and Mermaid conversion.
 - `src/scene/layout.ts`: deterministic architecture and sequence layouts.
