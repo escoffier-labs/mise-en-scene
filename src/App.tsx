@@ -7,6 +7,14 @@ import { preparePdfRasterExport, preparePngRasterExport, prepareVideoRasterExpor
 import { pdfBlob, pdfFromJpeg } from "./scene/pdf";
 import { provenanceNarrative } from "./scene/provenance";
 import { PNG_SCALE, SCENE_HEIGHT, SCENE_WIDTH, sizedSvg, svgToDataUrl } from "./scene/raster";
+import {
+  buildEmbedShareUrl,
+  buildShareEnvelope,
+  buildStudioShareUrl,
+  decodeShareEnvelope,
+  encodeShareEnvelope,
+  readShareTokenFromHash,
+} from "./scene/share";
 import { stepSpotlight, walkthroughSteps, type Viewport } from "./scene/walkthrough";
 import { planWalkthroughFrames } from "./scene/walkthroughPlan";
 import { formatControlState, type EncodeCapabilities, type WalkthroughVideoFormat } from "./scene/walkthroughEncode";
@@ -30,6 +38,21 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => { const img = new Image(); img.decoding = "async"; img.onload = () => resolve(img); img.onerror = () => reject(new Error("scene could not be rasterized")); img.src = src; });
 }
 
+// Opaque sandboxed iframes can throw on localStorage; keep persistence best-effort.
+function readStorage(key: string): string | null {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function writeStorage(key: string, value: string): void {
+  try { localStorage.setItem(key, value); } catch { /* ignore quota / security errors */ }
+}
+
+async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); return true; }
+  } catch { /* fall through */ }
+  return false;
+}
+
 // Walk a File System Access directory handle, collecting crawlable text files
 // within the size and count caps and skipping vendored directories.
 async function readDirectory(dir: any, prefix = "", files: CrawlFile[] = []): Promise<{ files: CrawlFile[]; hitFileCap: boolean }> {
@@ -43,12 +66,12 @@ async function readDirectory(dir: any, prefix = "", files: CrawlFile[] = []): Pr
 }
 
 function loadStoredTheme(): SceneThemeId {
-  const stored = localStorage.getItem("mise-theme");
+  const stored = readStorage("mise-theme");
   return isSceneThemeId(stored) ? stored : DEFAULT_SCENE_THEME;
 }
 
 export default function App() {
-  const initial = useMemo(() => extractScene(localStorage.getItem("mise-source") || sampleSource, "engineer").document, []);
+  const initial = useMemo(() => extractScene(readStorage("mise-source") || sampleSource, "engineer").document, []);
   const [document, setDocument] = useState<SceneDocument>(initial);
   const [source, setSource] = useState(initial.source.text);
   const [selection, setSelection] = useState<Selection>({ type: "block", id: initial.blocks[0]?.id });
@@ -73,6 +96,29 @@ export default function App() {
     return () => { cancelled = true; };
   }, []);
 
+  // Prefer compressed hash state over localStorage when a share link is opened.
+  useEffect(() => {
+    let cancelled = false;
+    const token = readShareTokenFromHash(window.location.hash);
+    if (!token) return;
+    void decodeShareEnvelope(token).then((result) => {
+      if (cancelled) return;
+      if (!result.ok) { setNotice(`Share link failed: ${result.error}`); return; }
+      const next = result.value.document;
+      setDocument(next);
+      setSource(next.source.text);
+      setSelection({ type: "block", id: next.blocks[0]?.id });
+      setDirty(false);
+      if (result.value.theme) {
+        setTheme(result.value.theme);
+        writeStorage("mise-theme", result.value.theme);
+      }
+      writeStorage("mise-source", next.source.text);
+      setNotice("Loaded shared scene");
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   function regenerate(next: string, audience = document.audience, extraWarnings: string[] = []) {
     if (dirty && !window.confirm("Regenerate the scene and discard manual edits?")) return false;
     const result = extractScene(next, audience);
@@ -81,7 +127,7 @@ export default function App() {
       result.document.warnings = [...extraWarnings, ...result.document.warnings].slice(0, SCENE_LIMITS.warnings);
     }
     setSource(next); setDocument(result.document); setDirty(false); setSelection({ type: "block", id: result.document.blocks[0]?.id });
-    localStorage.setItem("mise-source", next); setNotice(result.document.warnings[0] || `Extracted ${result.document.blocks.length} elements`);
+    writeStorage("mise-source", next); setNotice(result.document.warnings[0] || `Extracted ${result.document.blocks.length} elements`);
     return true;
   }
   function applyCrawl(files: CrawlFile[], crawlWarnings: string[] = []) {
@@ -115,8 +161,20 @@ export default function App() {
   function setView(view: SceneView) { setDocument((current) => ({ ...current, view })); setNotice(`${view} view`); }
   function chooseTheme(next: SceneThemeId) {
     setTheme(next);
-    localStorage.setItem("mise-theme", next);
+    writeStorage("mise-theme", next);
     setNotice(`Theme: ${next === "ledger" ? "Ledger" : "Paper"}`);
+  }
+  async function copyShareLink(kind: "studio" | "embed") {
+    try {
+      const token = await encodeShareEnvelope(buildShareEnvelope(document, theme));
+      const url = kind === "embed"
+        ? buildEmbedShareUrl(window.location.origin, window.location.pathname, token)
+        : buildStudioShareUrl(window.location.origin, window.location.pathname, token);
+      const copied = await copyText(url);
+      setNotice(copied ? (kind === "embed" ? "Embed link copied" : "Share link copied") : (kind === "embed" ? `Embed: ${url}` : `Share: ${url}`));
+    } catch (error) {
+      setNotice(`Share failed: ${error instanceof Error ? error.message : "unknown error"}`);
+    }
   }
   function select(type: "block" | "edge", id: string) { setSelection({ type, id }); }
   function updateSelected(field: "label" | "detail", value: string) {
@@ -206,6 +264,8 @@ export default function App() {
     <header className="topbar"><div><p className="eyebrow">Escoffier Labs &middot; the studio</p><h1 className="wordmark">mise-en-scene<span className="wordmark-cursor">_</span></h1></div>
       <div className="actions" aria-label="Artifact actions"><span className="export-status" role="status" aria-live="polite">{notice}</span>
         <label className="file-button">Import JSON<input type="file" accept="application/json,.json" onChange={(e)=>void importFile(e.target.files?.[0])}/></label>
+        <button disabled={!canExport} onClick={()=>void copyShareLink("studio")}>Share link</button>
+        <button disabled={!canExport} onClick={()=>void copyShareLink("embed")}>Embed link</button>
         <button disabled={!canExport} onClick={()=>download("mise-en-scene.svg",standaloneSvg(scene,review,null,undefined,theme),"image/svg+xml")}>Export SVG</button>
         <button disabled={!canExport} onClick={()=>void exportPng()}>Export PNG</button>
         <button disabled={!canExport} onClick={()=>void exportPdf()}>Export PDF</button>
