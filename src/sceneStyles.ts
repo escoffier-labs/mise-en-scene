@@ -3,32 +3,73 @@
 // share one stylesheet and cannot drift apart.
 //
 // Type system: Inter for display, IBM Plex Mono for metadata and detail.
-// The ledger palette: ink ground, amber accent, cool greys. Tokens are
-// literals (not CSS vars) because this sheet ships inside exported SVGs.
+// Themes are named literal palettes (not CSS vars) because this sheet ships
+// inside exported SVGs.
 
-export const T = {
-  bg: "#0d1014",
-  panel: "#11161c",
-  card: "#121821",
-  hairline: "#232b34",
-  hairlineStrong: "#2a323d",
-  hover: "#43505e",
-  text: "#dde3ea",
-  muted: "#9aa4b2",
-  dim: "#7d8590",
-  faint: "#5c6672",
-  accent: "#e0a45c",
-  accentDeep: "#9c6f3a",
-  onAccent: "#0d1014",
-  edge: "#38424e",
-} as const;
+export type SceneThemeId = "ledger" | "paper";
+export type ScenePalette = {
+  bg: string; panel: string; card: string; hairline: string;
+  hairlineStrong: string; hover: string; text: string; muted: string;
+  dim: string; faint: string; accent: string; accentDeep: string;
+  onAccent: string; edge: string;
+};
+
+export const SCENE_THEME_IDS = ["ledger", "paper"] as const;
+export const DEFAULT_SCENE_THEME: SceneThemeId = "ledger";
+
+export const SCENE_THEMES: Record<SceneThemeId, ScenePalette> = {
+  ledger: {
+    bg: "#0d1014",
+    panel: "#11161c",
+    card: "#121821",
+    hairline: "#232b34",
+    hairlineStrong: "#2a323d",
+    hover: "#43505e",
+    text: "#dde3ea",
+    muted: "#9aa4b2",
+    dim: "#7d8590",
+    faint: "#5c6672",
+    accent: "#e0a45c",
+    accentDeep: "#9c6f3a",
+    onAccent: "#0d1014",
+    edge: "#38424e",
+  },
+  paper: {
+    bg: "#f4f1e8",
+    panel: "#ebe6d8",
+    card: "#fffdf8",
+    hairline: "#d0c8b8",
+    hairlineStrong: "#b8ad9b",
+    hover: "#766754",
+    text: "#1b1b19",
+    muted: "#4d4a43",
+    dim: "#676259",
+    faint: "#7d766a",
+    accent: "#9b4d24",
+    accentDeep: "#6e3519",
+    onAccent: "#fffdf8",
+    edge: "#786f62",
+  },
+};
+
+export const T = SCENE_THEMES[DEFAULT_SCENE_THEME];
+
+export function isSceneThemeId(value: unknown): value is SceneThemeId {
+  return typeof value === "string" && SCENE_THEME_IDS.includes(value as SceneThemeId);
+}
+
+export function getSceneTheme(theme: SceneThemeId = DEFAULT_SCENE_THEME): ScenePalette {
+  return SCENE_THEMES[theme];
+}
 
 const sans = `Inter, system-ui, sans-serif`;
 const mono = `"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
 
-export const sceneCss = `
+export function sceneCssFor(theme: SceneThemeId = DEFAULT_SCENE_THEME) {
+  const palette = getSceneTheme(theme);
+  return `
 .scene-title {
-  fill: ${T.text};
+  fill: ${palette.text};
   font-family: ${sans};
   font-size: 28px;
   font-weight: 700;
@@ -36,7 +77,7 @@ export const sceneCss = `
 }
 
 .scene-summary {
-  fill: ${T.dim};
+  fill: ${palette.dim};
   font-family: ${mono};
   font-size: 10px;
   font-weight: 600;
@@ -45,7 +86,7 @@ export const sceneCss = `
 }
 
 .scene-meta {
-  fill: ${T.faint};
+  fill: ${palette.faint};
   font-family: ${mono};
   font-size: 10px;
   letter-spacing: 0.04em;
@@ -53,13 +94,13 @@ export const sceneCss = `
 
 .zone-frame {
   fill: none;
-  stroke: ${T.hairline};
+  stroke: ${palette.hairline};
   stroke-dasharray: 4 5;
   stroke-width: 1;
 }
 
 .zone-title {
-  fill: ${T.muted};
+  fill: ${palette.muted};
   font-family: ${mono};
   font-size: 11px;
   font-weight: 600;
@@ -67,7 +108,7 @@ export const sceneCss = `
 }
 
 .zone-desc {
-  fill: ${T.faint};
+  fill: ${palette.faint};
   font-family: ${mono};
   font-size: 10px;
   letter-spacing: 0.02em;
@@ -78,28 +119,28 @@ export const sceneCss = `
 }
 
 .scene-mode rect {
-  fill: ${T.panel};
-  stroke: ${T.hairlineStrong};
+  fill: ${palette.panel};
+  stroke: ${palette.hairlineStrong};
 }
 
 .scene-mode:hover rect {
-  stroke: ${T.hover};
+  stroke: ${palette.hover};
 }
 
 .scene-mode .scene-mode-active {
-  fill: ${T.accent};
-  stroke: ${T.accent};
+  fill: ${palette.accent};
+  stroke: ${palette.accent};
 }
 
 .scene-mode-text {
-  fill: ${T.muted};
+  fill: ${palette.muted};
   font-family: ${mono};
   font-size: 10px;
   font-weight: 500;
 }
 
 .scene-mode-text-active {
-  fill: ${T.onAccent};
+  fill: ${palette.onAccent};
   font-family: ${mono};
   font-size: 10px;
   font-weight: 600;
@@ -107,7 +148,7 @@ export const sceneCss = `
 
 .flow path {
   fill: none;
-  stroke: ${T.edge};
+  stroke: ${palette.edge};
   stroke-width: 1.1;
 }
 
@@ -124,13 +165,13 @@ export const sceneCss = `
 }
 
 .flow.active path {
-  stroke: ${T.accent};
+  stroke: ${palette.accent};
   stroke-width: 1.4;
 }
 
 .selected path,
 .selected .card-rect {
-  stroke: ${T.accent};
+  stroke: ${palette.accent};
   stroke-width: 2.5;
 }
 
@@ -139,24 +180,24 @@ export const sceneCss = `
 }
 
 .lifeline {
-  stroke: ${T.hairlineStrong};
+  stroke: ${palette.hairlineStrong};
   stroke-width: 1;
   stroke-dasharray: 4 5;
 }
 
 .flow-label {
-  fill: ${T.dim};
+  fill: ${palette.dim};
   font-family: ${mono};
   font-size: 10px;
   letter-spacing: 0.02em;
   paint-order: stroke;
-  stroke: ${T.bg};
+  stroke: ${palette.bg};
   stroke-width: 5px;
   stroke-linejoin: round;
 }
 
 .flow.active .flow-label {
-  fill: ${T.accent};
+  fill: ${palette.accent};
 }
 
 .scene-block {
@@ -170,17 +211,17 @@ export const sceneCss = `
 }
 
 .card-rect {
-  fill: ${T.card};
-  stroke: ${T.hairlineStrong};
+  fill: ${palette.card};
+  stroke: ${palette.hairlineStrong};
   stroke-width: 1;
 }
 
 .scene-block:hover .card-rect {
-  stroke: ${T.hover};
+  stroke: ${palette.hover};
 }
 
 .scene-block.selected .card-rect {
-  stroke: ${T.accent};
+  stroke: ${palette.accent};
   stroke-width: 1.3;
 }
 
@@ -203,7 +244,7 @@ export const sceneCss = `
 .participant span {
   display: -webkit-box;
   overflow: hidden;
-  color: ${T.text};
+  color: ${palette.text};
   font-family: ${sans};
   font-size: 12.5px;
   font-weight: 600;
@@ -216,7 +257,7 @@ export const sceneCss = `
 .card h3 {
   margin: 0 0 5px;
   overflow: hidden;
-  color: ${T.text};
+  color: ${palette.text};
   font-family: ${sans};
   font-size: 13px;
   font-weight: 600;
@@ -230,7 +271,7 @@ export const sceneCss = `
   display: -webkit-box;
   margin: 0;
   overflow: hidden;
-  color: ${T.muted};
+  color: ${palette.muted};
   font-family: ${mono};
   font-size: 10.5px;
   line-height: 1.5;
@@ -239,13 +280,13 @@ export const sceneCss = `
 }
 
 .callout rect {
-  fill: ${T.panel};
-  stroke: ${T.accentDeep};
+  fill: ${palette.panel};
+  stroke: ${palette.accentDeep};
   stroke-width: 1;
 }
 
 .callout-title {
-  fill: ${T.accent};
+  fill: ${palette.accent};
   font-family: ${sans};
   font-size: 16px;
   font-weight: 700;
@@ -254,7 +295,7 @@ export const sceneCss = `
 
 .callout p {
   margin: 0;
-  color: ${T.muted};
+  color: ${palette.muted};
   font-family: ${mono};
   font-size: 10.5px;
   line-height: 1.5;
@@ -291,45 +332,48 @@ export const sceneCss = `
   transform: scale(1.05);
 }
 .scene-block.walk-on .card-rect {
-  stroke: ${T.accent};
+  stroke: ${palette.accent};
   stroke-width: 2.5;
-  filter: drop-shadow(0 6px 16px rgba(224, 164, 92, 0.35));
+  filter: drop-shadow(0 6px 16px ${palette.accent}59);
 }
 .flow.walk-on path {
-  stroke: ${T.accent};
+  stroke: ${palette.accent};
   stroke-width: 2.6;
-  filter: drop-shadow(0 0 6px rgba(224, 164, 92, 0.45));
+  filter: drop-shadow(0 0 6px ${palette.accent}73);
 }
 .flow.walk-on .flow-label {
-  fill: ${T.accent};
+  fill: ${palette.accent};
   font-weight: 600;
 }
 
 /* Review-mode analytic marks: confidence (H/M/L) and competing-hypothesis (?).
    Only rendered when the Review evidence toggle is on. */
 .review-mark {
-  fill: ${T.accent};
+  fill: ${palette.accent};
   font-family: ${mono};
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
   paint-order: stroke;
-  stroke: ${T.bg};
+  stroke: ${palette.bg};
   stroke-width: 4px;
   stroke-linejoin: round;
 }
 .review-mark.competing {
-  fill: ${T.hover};
+  fill: ${palette.hover};
 }
 .flow.confidence-low path,
 .scene-block.confidence-low .card-rect {
   stroke-dasharray: 5 4;
 }
 .flow.competing-hypothesis path {
-  stroke: ${T.hover};
+  stroke: ${palette.hover};
 }
 .scene-block.competing-hypothesis .card-rect {
-  stroke: ${T.hover};
+  stroke: ${palette.hover};
   stroke-dasharray: 3 3;
 }
 `;
+}
+
+export const sceneCss = sceneCssFor();

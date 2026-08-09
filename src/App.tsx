@@ -11,7 +11,7 @@ import { planWalkthroughFrames } from "./scene/walkthroughPlan";
 import { formatControlState, type EncodeCapabilities, type WalkthroughVideoFormat } from "./scene/walkthroughEncode";
 import { CRAWL_MAX_BYTES, CRAWL_MAX_FILES, isCrawlableFile, isIgnoredDir, parseRepoUrl, selectRemoteCandidatePaths, synthesizeSource, type CrawlFile, type RepoRef } from "./scene/crawl";
 import { fetchRepoFiles } from "./scene/github";
-import { T } from "./sceneStyles";
+import { DEFAULT_SCENE_THEME, getSceneTheme, isSceneThemeId, type SceneThemeId } from "./sceneStyles";
 import { CONFIDENCE_LEVELS, editBlock, editEdge, type Audience, type Confidence, type SceneDocument, type SceneView } from "./scene/types";
 import { validateSceneDocument } from "./scene/validate";
 import { encodeWalkthroughVideo, isVideoExportSupported, probeWalkthroughEncodeCapabilities } from "./walkthroughRecorder";
@@ -41,12 +41,18 @@ async function readDirectory(dir: any, prefix = "", files: CrawlFile[] = []): Pr
   return files;
 }
 
+function loadStoredTheme(): SceneThemeId {
+  const stored = localStorage.getItem("mise-theme");
+  return isSceneThemeId(stored) ? stored : DEFAULT_SCENE_THEME;
+}
+
 export default function App() {
   const initial = useMemo(() => extractScene(localStorage.getItem("mise-source") || sampleSource, "engineer").document, []);
   const [document, setDocument] = useState<SceneDocument>(initial);
   const [source, setSource] = useState(initial.source.text);
   const [selection, setSelection] = useState<Selection>({ type: "block", id: initial.blocks[0]?.id });
   const [review, setReview] = useState(false);
+  const [theme, setTheme] = useState<SceneThemeId>(loadStoredTheme);
   const [dirty, setDirty] = useState(false);
   const [notice, setNotice] = useState("Ready");
   const [encodeCaps, setEncodeCaps] = useState<EncodeCapabilities | null>(null);
@@ -102,6 +108,11 @@ export default function App() {
   }
 
   function setView(view: SceneView) { setDocument((current) => ({ ...current, view })); setNotice(`${view} view`); }
+  function chooseTheme(next: SceneThemeId) {
+    setTheme(next);
+    localStorage.setItem("mise-theme", next);
+    setNotice(`Theme: ${next === "ledger" ? "Ledger" : "Paper"}`);
+  }
   function select(type: "block" | "edge", id: string) { setSelection({ type, id }); }
   function updateSelected(field: "label" | "detail", value: string) {
     if (!selection) return;
@@ -126,7 +137,7 @@ export default function App() {
     const gate = await preparePngRasterExport();
     if (!gate.ok) { setNotice(gate.notice); return; }
     try {
-      const img=await loadImage(svgToDataUrl(sizedSvg(standaloneSvg(scene,review))));
+      const img=await loadImage(svgToDataUrl(sizedSvg(standaloneSvg(scene,review,null,undefined,theme))));
       const canvas=globalThis.document.createElement("canvas"); canvas.width=SCENE_WIDTH*PNG_SCALE; canvas.height=SCENE_HEIGHT*PNG_SCALE;
       const ctx=canvas.getContext("2d"); if (!ctx) throw new Error("canvas is unavailable");
       ctx.scale(PNG_SCALE,PNG_SCALE); ctx.drawImage(img,0,0,SCENE_WIDTH,SCENE_HEIGHT);
@@ -146,10 +157,10 @@ export default function App() {
       const plan=planWalkthroughFrames(scene);
       // Each step is rasterized once at full frame (spotlight baked in); the
       // camera move is a canvas crop of that bitmap driven by the frame plan.
-      const images=await Promise.all(steps.map((step)=>loadImage(svgToDataUrl(sizedSvg(standaloneSvg(scene,false,stepSpotlight(step)))))));
+      const images=await Promise.all(steps.map((step)=>loadImage(svgToDataUrl(sizedSvg(standaloneSvg(scene,false,stepSpotlight(step),undefined,theme))))));
       const canvas=globalThis.document.createElement("canvas"); canvas.width=SCENE_WIDTH; canvas.height=SCENE_HEIGHT;
       const ctx=canvas.getContext("2d"); if (!ctx) throw new Error("canvas is unavailable");
-      const drawCrop=(img: HTMLImageElement, v: Viewport)=>{ ctx.fillStyle=T.bg; ctx.fillRect(0,0,SCENE_WIDTH,SCENE_HEIGHT); ctx.drawImage(img,v.x,v.y,v.w,v.h,0,0,SCENE_WIDTH,SCENE_HEIGHT); };
+      const drawCrop=(img: HTMLImageElement, v: Viewport)=>{ ctx.fillStyle=getSceneTheme(theme).bg; ctx.fillRect(0,0,SCENE_WIDTH,SCENE_HEIGHT); ctx.drawImage(img,v.x,v.y,v.w,v.h,0,0,SCENE_WIDTH,SCENE_HEIGHT); };
       const result = await encodeWalkthroughVideo({
         format,
         plan,
@@ -176,14 +187,14 @@ export default function App() {
     <header className="topbar"><div><p className="eyebrow">Escoffier Labs &middot; the studio</p><h1 className="wordmark">mise-en-scene<span className="wordmark-cursor">_</span></h1></div>
       <div className="actions" aria-label="Artifact actions"><span className="export-status" role="status" aria-live="polite">{notice}</span>
         <label className="file-button">Import JSON<input type="file" accept="application/json,.json" onChange={(e)=>void importFile(e.target.files?.[0])}/></label>
-        <button disabled={!canExport} onClick={()=>download("mise-en-scene.svg",standaloneSvg(scene,review),"image/svg+xml")}>Export SVG</button>
+        <button disabled={!canExport} onClick={()=>download("mise-en-scene.svg",standaloneSvg(scene,review,null,undefined,theme),"image/svg+xml")}>Export SVG</button>
         <button disabled={!canExport} onClick={()=>void exportPng()}>Export PNG</button>
         <button disabled={!canExport} onClick={()=>download("mise-en-scene.json",JSON.stringify(scene,null,2),"application/json")}>Export JSON</button>
         <button disabled={!canExport} onClick={()=>download("mise-en-scene-provenance.txt",provenanceNarrative(scene),"text/plain")}>Export provenance</button>
-        <button disabled={!canExport} onClick={()=>download("mise-en-scene-walkthrough.html",standaloneWalkthrough(scene),"text/html")}>Walkthrough</button>
+        <button disabled={!canExport} onClick={()=>download("mise-en-scene-walkthrough.html",standaloneWalkthrough(scene,theme),"text/html")}>Walkthrough</button>
         <button disabled={!canExport || !videoFormats.webm} onClick={()=>void recordWalkthrough("webm")} title={videoFormats.webm ? "Encode VP9 WebM when capable, else MediaRecorder WebM" : "WebM encoding unavailable in this browser"}>Record WebM</button>
         <button disabled={!canExport || !videoFormats.mp4} onClick={()=>void recordWalkthrough("mp4")} title={videoFormats.mp4 ? "Encode AVC MP4 via MediaBunny" : "MP4 encoding unavailable in this browser"}>Record MP4</button>
-        <button className="primary" disabled={!canExport} onClick={()=>download("mise-en-scene.html",standaloneHtml(scene),"text/html")}>Export HTML</button>
+        <button className="primary" disabled={!canExport} onClick={()=>download("mise-en-scene.html",standaloneHtml(scene,theme),"text/html")}>Export HTML</button>
       </div></header>
     <section className="workspace">
       <aside className="panel source-panel"><div className="panel-head"><h2>Source</h2><div className="panel-head-actions"><button className="small" onClick={()=>void openFolder()}>Open folder</button><button className="small" onClick={()=>void openRepoUrl()}>From URL</button><button className="small" onClick={()=>regenerate(sampleSource)}>Sample</button></div></div>
@@ -192,8 +203,8 @@ export default function App() {
         <p className="source-meta">{document.source.kind === "openapi" ? "OpenAPI JSON" : "Plain text"} · {document.blocks.length} elements · {document.edges.length} relationships</p>
         {document.warnings.map((warning)=><p className="warning" key={warning}>{warning}</p>)}
       </aside>
-      <section className="artifact-workbench"><div className="view-controls" aria-label="Scene view"><button className={document.view==="architecture"?"active":""} onClick={()=>setView("architecture")}>Architecture</button><button className={document.view==="sequence"?"active":""} onClick={()=>setView("sequence")}>Sequence</button><button className={review?"active":""} aria-pressed={review} onClick={()=>setReview((v)=>!v)}>Review evidence</button></div>
-        <section className="stage-panel"><div className="stage"><SceneSvg scene={scene} selectedId={selection?.id} review={review} onSelect={select}/></div></section>
+      <section className="artifact-workbench"><div className="view-controls" aria-label="Scene view"><button className={document.view==="architecture"?"active":""} onClick={()=>setView("architecture")}>Architecture</button><button className={document.view==="sequence"?"active":""} onClick={()=>setView("sequence")}>Sequence</button><button className={review?"active":""} aria-pressed={review} onClick={()=>setReview((v)=>!v)}>Review evidence</button><label>Scene theme<select aria-label="Scene theme" value={theme} onChange={(e)=>chooseTheme(e.target.value as SceneThemeId)}><option value="ledger">Ledger</option><option value="paper">Paper</option></select></label></div>
+        <section className="stage-panel"><div className="stage"><SceneSvg scene={scene} selectedId={selection?.id} review={review} theme={theme} onSelect={select}/></div></section>
         <section className="detail-rail"><div className="rail-card inspector"><h2>Selected element</h2>{selected ? <><label>Label<input value={selected.label} onChange={(e)=>updateSelected("label",e.target.value)}/></label>{selection?.type==="block"&&<label>Detail<textarea value={"detail" in selected?selected.detail:""} onChange={(e)=>updateSelected("detail",e.target.value)}/></label>}{review&&<><label>Confidence<select value={selected.confidence ?? ""} onChange={(e)=>updateAnalytic("confidence", (e.target.value || undefined) as Confidence | undefined)}><option value="">Unset</option>{CONFIDENCE_LEVELS.map((level)=><option key={level} value={level}>{level}</option>)}</select></label><label className="checkbox"><input type="checkbox" checked={!!selected.competingHypothesis} onChange={(e)=>updateAnalytic("competingHypothesis", e.target.checked || undefined)}/> Competing hypothesis</label></>}</>:<p>Select a block or relationship.</p>}</div>
           <div className="rail-card"><h2>Evidence</h2>{selectedFacts.length?<ol>{selectedFacts.map((fact)=><li key={fact.id}><button className="evidence" disabled={fact.start<0} onClick={()=>chooseFact(fact.start,fact.end)}>{fact.text}</button></li>)}</ol>:<p>No direct source evidence attached.</p>}</div>
           <div className="rail-card terms-card"><h2>Terms</h2><div className="term-list">{document.terms.map((term)=><span key={term} title={term}>{term}</span>)}</div></div>
