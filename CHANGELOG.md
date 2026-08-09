@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- MediaBunny walkthrough encode with `Quality("high")`, VP9 WebM default, AVC MP4 when `canEncodeVideo` allows, MediaRecorder WebM fallback, and format-gated Record WebM/MP4 controls.
 - Deterministic source-derived blocks, relationships, facts, and evidence ranges.
 - Structured OpenAPI JSON extraction for API, tag, and operation elements.
 - OpenAPI YAML extraction through a dependency-free parser scoped to the OpenAPI subset.

@@ -160,7 +160,7 @@ test("PDF guard returns ok when the probe succeeds", async () => {
   assert.deepEqual(result, { ok: true });
 });
 
-test("video guard keeps MediaRecorder precheck before the foreignObject probe", async () => {
+test("video guard keeps media-support precheck before the foreignObject probe", async () => {
   let probed = 0;
   const mediaBlocked = await prepareVideoRasterExport({
     mediaSupported: false,

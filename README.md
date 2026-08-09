@@ -45,7 +45,7 @@ npm run dev
 | **Ingest** | Source material | Pasted text, a local folder, a public repo, OpenAPI JSON or YAML |
 | **Extract** | Source-grounded facts | Systems, actors, flows, terms, and evidence ranges |
 | **Stage** | Interactive scene | Architecture and sequence views, editing, review |
-| **Export** | Portable artifacts | Interactive HTML, JSON, SVG, PNG, and a walkthrough (HTML or WebM) |
+| **Export** | Portable artifacts | Interactive HTML, JSON, SVG, PNG, and a walkthrough (HTML, WebM, or MP4 when capable) |
 
 <p align="center">
   <img src="docs/assets/mise-en-scene-studio.png" alt="Mise en Scene studio" width="760">
@@ -81,6 +81,24 @@ backend:
 - **From URL** fetches a public GitHub repository's docs and specs directly from
   the browser (two API calls plus raw file reads), then extracts the same way.
 
+### Crawl limits and GitHub rate limits
+
+Repository crawling is intentionally bounded so the browser stays responsive:
+
+- **Open folder** reads at most 200 crawlable text files (Markdown, plain text,
+  and spec-shaped YAML/JSON) per pick. When the cap is hit, the studio shows a
+  truncation warning in the source panel and carries it into JSON and HTML
+  exports.
+- **From URL** considers at most 80 remote candidate paths before fetching raw
+  file contents. Large repositories may omit docs beyond that cap; the same
+  truncation warning appears in the studio and exports.
+
+**From URL** uses the unauthenticated GitHub REST API (about 60 requests per hour
+per IP). If you see a rate-limit error, wait and retry, clone the repository and
+use **Open folder**, or paste the source directly. Authenticated GitHub API
+access raises the limit substantially; a future studio release may accept an
+optional personal access token for repeated URL imports.
+
 ## Exports
 
 JSON exports use a validated, versioned schema and can be imported for another
@@ -89,7 +107,7 @@ inspection. SVG exports contain the active view and no scripts. PNG exports
 rasterize the active view. The walkthrough export gives a guided tour of the
 scene one relationship at a time, with a camera that zooms to each connection
 and spotlight highlighting, as a self-contained animated HTML file or a recorded
-WebM video.
+WebM/MP4 video (MediaBunny when WebCodecs allows; MediaRecorder WebM fallback).
 
 ## Example
 
@@ -111,6 +129,7 @@ orchestration pipeline and its sidecars.
 ## Code layout
 
 - `src/App.tsx`: studio state, import, editing, provenance, and export actions.
+- `src/walkthroughRecorder.ts`: browser walkthrough encode (MediaBunny + MediaRecorder).
 - `src/components/SceneSvg.tsx`: shared architecture and sequence renderer.
 - `src/scene/types.ts`: versioned scene model and editing helpers.
 - `src/scene/extract.ts`: plain-text and OpenAPI (JSON and YAML) extraction.
@@ -121,6 +140,8 @@ orchestration pipeline and its sidecars.
 - `src/scene/exports.tsx`: standalone HTML, SVG, and walkthrough serialization.
 - `src/scene/raster.ts`: SVG-to-PNG raster helpers.
 - `src/scene/walkthrough.ts`: the shared tour model for the walkthrough exports.
+- `src/scene/walkthroughPlan.ts`: deterministic frame plan for video encode.
+- `src/scene/walkthroughEncode.ts`: pure encode strategy, format gating, and naming.
 - `src/sceneStyles.ts`: styles for the SVG internals (injected inside the SVG)
   plus the page chrome for the exported artifact.
 - `src/index.css`: app shell layout and controls.
@@ -159,8 +180,10 @@ architecture and sequence views, JSON round trips, editing, repository crawling
 PNG, and walkthrough exports work today. Repository crawling and OpenAPI YAML run
 entirely in the browser. PNG and walkthrough exports rasterize the scene, so they
 depend on browser support for `foreignObject` rasterization (Chromium and
-Firefox); video recording uses `MediaRecorder` and falls back to a clear notice
-where unsupported.
+Firefox). Video encode prefers MediaBunny (MPL-2.0; see
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)) with runtime capability
+checks for VP9 WebM and AVC MP4, keeps `MediaRecorder` WebM as fallback, and
+shows a clear notice when no encode path is available.
 
 ## Naming
 

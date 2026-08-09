@@ -1,9 +1,9 @@
-import { sceneCss, T } from "../sceneStyles";
+import { getSceneTheme, sceneCssFor, type SceneThemeId } from "../sceneStyles";
 import type { Confidence, SceneBlock, SceneDocument } from "../scene/types";
 import type { Spotlight } from "../scene/walkthrough";
 import { onActivateKeyDown } from "./activateKey";
 
-type Props = { scene: SceneDocument; selectedId?: string; review?: boolean; spotlight?: Spotlight | null; camera?: string; onSelect?: (type: "block" | "edge", id: string) => void };
+type Props = { scene: SceneDocument; selectedId?: string; review?: boolean; spotlight?: Spotlight | null; camera?: string; theme?: SceneThemeId; onSelect?: (type: "block" | "edge", id: string) => void };
 type Analytic = { confidence?: Confidence; competingHypothesis?: boolean };
 
 const CONFIDENCE_MARK: Record<Confidence, string> = { high: "H", medium: "M", low: "L" };
@@ -47,14 +47,15 @@ function ReviewMarks({ x, y, review, item }: { x: number; y: number; review?: bo
   return <>{marks.map((mark) => <text key={mark.key} x={x + mark.dx} y={y} textAnchor="middle" className={mark.className}>{mark.label}</text>)}</>;
 }
 
-export function SceneSvg({ scene, selectedId, review, spotlight, camera, onSelect }: Props) {
+export function SceneSvg({ scene, selectedId, review, spotlight, camera, theme, onSelect }: Props) {
+  const palette = getSceneTheme(theme);
   const byId = new Map(scene.blocks.map((block) => [block.id, block]));
   const body = scene.view === "sequence"
     ? <Sequence scene={scene} selectedId={selectedId} review={review} spotlight={spotlight} onSelect={onSelect}/>
     : <Architecture scene={scene} byId={byId} selectedId={selectedId} review={review} spotlight={spotlight} onSelect={onSelect}/>;
   return <svg viewBox="0 0 1280 780" role="group" aria-label={`${scene.title} ${scene.view} scene`}>
-    <style>{sceneCss}</style><defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="4" orient="auto"><path d="M1,1 L7,4 L1,7 Z" fill={T.accent}/></marker></defs>
-    <rect width="1280" height="780" fill={T.bg}/><text x="48" y="58" className="scene-title">{short(scene.title, 64)}</text><text x="48" y="84" className="scene-summary">{short(scene.summary, 110)}</text>
+    <style>{sceneCssFor(theme)}</style><defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="4" orient="auto"><path d="M1,1 L7,4 L1,7 Z" fill={palette.accent}/></marker></defs>
+    <rect width="1280" height="780" fill={palette.bg}/><text x="48" y="58" className="scene-title">{short(scene.title, 64)}</text><text x="48" y="84" className="scene-summary">{short(scene.summary, 110)}</text>
     {camera !== undefined ? <g className="stage-camera" transform={camera}>{body}</g> : body}
   </svg>;
 }

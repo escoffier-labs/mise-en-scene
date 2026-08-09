@@ -57,20 +57,22 @@ let sequenceMarkup = "";
 let sceneSvgMarkup = "";
 let walkSceneMarkup = "";
 
+const theme = payload.theme;
+
 if (payload.op === "html") {
-  output = standaloneHtml(scene);
-  architectureMarkup = sceneSvg(architecture);
-  sequenceMarkup = sceneSvg(sequence);
+  output = standaloneHtml(scene, theme);
+  architectureMarkup = sceneSvg(architecture, { theme });
+  sequenceMarkup = sceneSvg(sequence, { theme });
 } else if (payload.op === "svg") {
   const laid = architecture;
   const review = payload.review ?? false;
   const spotlight = payload.spotlight ?? null;
   const camera = payload.camera;
-  output = standaloneSvg(laid, review, spotlight, camera);
-  sceneSvgMarkup = sceneSvg(laid, { review, spotlight, camera });
+  output = standaloneSvg(laid, review, spotlight, camera, theme);
+  sceneSvgMarkup = sceneSvg(laid, { review, spotlight, camera, theme });
 } else {
-  output = standaloneWalkthrough(scene);
-  walkSceneMarkup = sceneSvg(architecture, { camera: "translate(0 0) scale(1)" });
+  output = standaloneWalkthrough(scene, theme);
+  walkSceneMarkup = sceneSvg(architecture, { camera: "translate(0 0) scale(1)", theme });
 }
 
 console.log(JSON.stringify({ output, architectureMarkup, sequenceMarkup, sceneSvgMarkup, walkSceneMarkup }));
@@ -118,11 +120,17 @@ function parseWalkSteps(html: string) {
 }
 
 test("HTML export embeds safe scene data and interaction hooks", () => {
-  const html = htmlDocument("<svg></svg>", { schemaVersion: 1, title: "</script><b>x</b>" });
+  const html = htmlDocument("<svg></svg>", { schemaVersion: 1, title: "</script><b>x</b>", warnings: [] });
   assert.match(html, /application\/json/);
   assert.match(html, /data-view/);
   assert.doesNotMatch(html, /<\/script><b>/);
   assert.match(html, /schemaVersion/);
+});
+
+test("HTML export renders crawl warnings above the scene", () => {
+  const html = htmlDocument("<svg></svg>", { warnings: ["Remote crawl limited to 80 candidate files."] });
+  assert.match(html, /class="warnings"/);
+  assert.match(html, /Remote crawl limited to 80 candidate files\./);
 });
 
 test("SVG export adds namespace and contains no script", () => {
@@ -225,4 +233,34 @@ test("standaloneWalkthrough escapes unsafe captions in serialized steps", () => 
   assert.doesNotMatch(html, /<img onerror/);
   const steps = parseWalkSteps(html);
   assert.ok(steps.some((step) => step.caption.includes("<img onerror=alert(1)>")));
+});
+
+function assertPaperThemeLiterals(markup: string) {
+  assert.match(markup, /#f4f1e8/);
+  assert.match(markup, /#9b4d24/);
+  assert.doesNotMatch(markup, /#0d1014/);
+}
+
+test("standalone helpers embed paper theme literals through SceneSvg", () => {
+  const { output: html, architectureMarkup, sequenceMarkup } = runExportsHarness("html", representativeScene, { theme: "paper" });
+  const archSection = html.match(/<section class="view" data-view="architecture">([\s\S]*?)<\/section>/)?.[1];
+  const seqSection = html.match(/<section class="view" data-view="sequence">([\s\S]*?)<\/section>/)?.[1];
+  assert.ok(archSection, "architecture view section is present");
+  assert.ok(seqSection, "sequence view section is present");
+  assert.equal(archSection, architectureMarkup);
+  assert.equal(seqSection, sequenceMarkup);
+  assertPaperThemeLiterals(archSection!);
+  assertPaperThemeLiterals(seqSection!);
+
+  const { output: svg, sceneSvgMarkup } = runExportsHarness("svg", representativeScene, { theme: "paper" });
+  assert.equal(svg, normalizeSvgDocument(sceneSvgMarkup!));
+  assertPaperThemeLiterals(svg);
+  assertPaperThemeLiterals(sceneSvgMarkup!);
+
+  const { output: walkHtml, walkSceneMarkup } = runExportsHarness("walk", representativeScene, { theme: "paper" });
+  const embeddedScene = walkHtml.match(/<div class="walk-stage">([\s\S]*?)<div class="walk-title"/)?.[1];
+  assert.ok(embeddedScene, "walkthrough must embed rendered scene markup");
+  assert.equal(embeddedScene!.trim(), walkSceneMarkup);
+  assertPaperThemeLiterals(walkSceneMarkup!);
+  assertPaperThemeLiterals(embeddedScene!);
 });
