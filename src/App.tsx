@@ -4,7 +4,7 @@ import { extractScene } from "./scene/extract";
 import { standaloneHtml, standaloneSvg, standaloneWalkthrough } from "./scene/exports";
 import { layoutScene } from "./scene/layout";
 import { preparePdfRasterExport, preparePngRasterExport, prepareVideoRasterExport } from "./scene/foreignObjectRaster";
-import { pdfFromJpeg } from "./scene/pdf";
+import { pdfBlob, pdfFromJpeg } from "./scene/pdf";
 import { provenanceNarrative } from "./scene/provenance";
 import { PNG_SCALE, SCENE_HEIGHT, SCENE_WIDTH, sizedSvg, svgToDataUrl } from "./scene/raster";
 import { stepSpotlight, stepViewport, walkthroughSteps, type Viewport } from "./scene/walkthrough";
@@ -131,7 +131,7 @@ export default function App() {
       const canvas=await rasterizeSceneCanvas();
       const jpeg=await new Promise<Blob|null>((resolve)=>canvas.toBlob(resolve,"image/jpeg",0.92)); if (!jpeg) throw new Error("JPEG encoding failed");
       const bytes=pdfFromJpeg(new Uint8Array(await jpeg.arrayBuffer()), canvas.width, canvas.height);
-      saveBlob("mise-en-scene.pdf", new Blob([bytes],{type:"application/pdf"})); setNotice("mise-en-scene.pdf exported");
+      saveBlob("mise-en-scene.pdf", pdfBlob(bytes)); setNotice("mise-en-scene.pdf exported");
     } catch (error) { setNotice(`PDF export failed: ${error instanceof Error ? error.message : "unknown error"}`); }
   }
   async function recordWalkthrough() {

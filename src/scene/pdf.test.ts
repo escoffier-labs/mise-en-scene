@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { PNG_SCALE, SCENE_HEIGHT, SCENE_WIDTH } from "./raster.ts";
-import { PDF_CONTENT_WIDTH_PT, PDF_MARGIN_PT, pdfFromJpeg, pdfPageSize } from "./pdf.ts";
+import { PDF_CONTENT_WIDTH_PT, PDF_MARGIN_PT, pdfBlob, pdfFromJpeg, pdfPageSize } from "./pdf.ts";
 
 // Minimal valid JPEG (1x1 pixel) so the PDF embeds a real DCTDecode payload.
 const TINY_JPEG = Uint8Array.from([
@@ -78,4 +78,12 @@ test("pdfFromJpeg xref offsets point at object headers", () => {
     const slice = asText(pdf.subarray(offset, offset + 16));
     assert.match(slice, new RegExp(`^${i} 0 obj\\n`));
   }
+});
+
+test("pdfBlob wraps bytes as application/pdf", async () => {
+  const pdf = pdfFromJpeg(TINY_JPEG, 8, 8);
+  const blob = pdfBlob(pdf);
+  assert.equal(blob.type, "application/pdf");
+  assert.equal(blob.size, pdf.byteLength);
+  assert.deepEqual(new Uint8Array(await blob.arrayBuffer()), pdf);
 });

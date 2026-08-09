@@ -228,5 +228,6 @@ test("App wires raster export guards including PDF", () => {
   assert.match(app, /\bprepareVideoRasterExport\b/);
   assert.match(app, /\bmediaSupported\b/);
   assert.match(app, /\bpdfFromJpeg\b/);
+  assert.match(app, /\bpdfBlob\b/);
   assert.match(app, /Export PDF/);
 });

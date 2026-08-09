@@ -130,3 +130,11 @@ export function pdfFromJpeg(
   );
   return concatBytes(parts);
 }
+
+// Copy into a fresh ArrayBuffer so the Blob constructor accepts the payload under
+// TypeScript's ArrayBuffer-vs-SharedArrayBuffer BlobPart typing.
+export function pdfBlob(pdf: Uint8Array): Blob {
+  const buffer = new ArrayBuffer(pdf.byteLength);
+  new Uint8Array(buffer).set(pdf);
+  return new Blob([buffer], { type: "application/pdf" });
+}
