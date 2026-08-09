@@ -84,9 +84,9 @@ standaloneWalkthrough(scene: SceneDocument, theme: SceneThemeId = DEFAULT_SCENE_
 **Files:**
 - Modify: `src/App.tsx`
 
-- [ ] Add a failing source-level or render harness test only if an existing App harness supports it. Do not add a DOM test dependency. At minimum, Task 2 tests must already prove the behavioral export contract before this task changes production code.
-- [ ] Initialize `theme` from `localStorage.getItem("mise-theme")` only when `isSceneThemeId` accepts it, otherwise use `DEFAULT_SCENE_THEME`. Add a labeled `<select aria-label="Scene theme">` with options `Ledger` and `Paper`; on change, update state, persist `mise-theme`, and set the notice to `Theme: Ledger` or `Theme: Paper`.
-- [ ] Pass `theme` to the live `SceneSvg`, `standaloneHtml`, `standaloneSvg`, and `standaloneWalkthrough` calls. Pass it as the fifth argument to every SVG used for PNG and recorded walkthrough frames. Use `getSceneTheme(theme).bg` for the video canvas fill.
-- [ ] Run full verification through Brigade: `brigade work verify run --target . --command "./scripts/verify"`. Expect tests and build to pass. If dependencies are unavailable locally, push the branch and require green pull-request CI before review or merge.
-- [ ] Commit: `git add src/App.tsx docs/plans/2026-08-08-scene-themes.md && git commit -m "feat: add scene theme selector"`.
+- [x] Add a failing source-level or render harness test only if an existing App harness supports it. Do not add a DOM test dependency. At minimum, Task 2 tests must already prove the behavioral export contract before this task changes production code.
+- [x] Initialize `theme` from `localStorage.getItem("mise-theme")` only when `isSceneThemeId` accepts it, otherwise use `DEFAULT_SCENE_THEME`. Add a labeled `<select aria-label="Scene theme">` with options `Ledger` and `Paper`; on change, update state, persist `mise-theme`, and set the notice to `Theme: Ledger` or `Theme: Paper`.
+- [x] Pass `theme` to the live `SceneSvg`, `standaloneHtml`, `standaloneSvg`, and `standaloneWalkthrough` calls. Pass it as the fifth argument to every SVG used for PNG and recorded walkthrough frames. Use `getSceneTheme(theme).bg` for the video canvas fill.
+- [x] Run full verification through Brigade: `brigade work verify run --target . --command "./scripts/verify"`. Expect tests and build to pass. If dependencies are unavailable locally, push the branch and require green pull-request CI before review or merge.
+- [x] Commit: `git add src/App.tsx docs/plans/2026-08-08-scene-themes.md && git commit -m "feat: add scene theme selector"`.
 
