@@ -334,12 +334,12 @@ export function sceneCssFor(theme: SceneThemeId = DEFAULT_SCENE_THEME) {
 .scene-block.walk-on .card-rect {
   stroke: ${palette.accent};
   stroke-width: 2.5;
-  filter: drop-shadow(0 6px 16px rgba(224, 164, 92, 0.35));
+  filter: drop-shadow(0 6px 16px ${palette.accent}59);
 }
 .flow.walk-on path {
   stroke: ${palette.accent};
   stroke-width: 2.6;
-  filter: drop-shadow(0 0 6px rgba(224, 164, 92, 0.45));
+  filter: drop-shadow(0 0 6px ${palette.accent}73);
 }
 .flow.walk-on .flow-label {
   fill: ${palette.accent};

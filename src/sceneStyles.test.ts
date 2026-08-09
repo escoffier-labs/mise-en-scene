@@ -39,3 +39,19 @@ test("paper uses distinct palette and literal CSS without variables or ledger ac
   assert.doesNotMatch(css, /var\(/);
   assert.doesNotMatch(css, /#e0a45c/);
 });
+
+test("paper scene CSS uses accent-derived drop shadows, not ledger rgba", () => {
+  const paper = getSceneTheme("paper");
+  const css = sceneCssFor("paper");
+  assert.equal(css.includes("rgba(224, 164, 92"), false);
+  assert.equal(css.includes(`${paper.accent}59`), true);
+  assert.equal(css.includes(`${paper.accent}73`), true);
+});
+
+test("ledger scene CSS keeps accent-equivalent eight-digit hex shadows", () => {
+  const ledger = getSceneTheme("ledger");
+  const css = sceneCssFor("ledger");
+  assert.equal(css.includes("rgba(224, 164, 92"), false);
+  assert.equal(css.includes(`${ledger.accent}59`), true);
+  assert.equal(css.includes(`${ledger.accent}73`), true);
+});
