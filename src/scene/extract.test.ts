@@ -101,3 +101,171 @@ test("OpenAPI JSON facts map escaped summaries to decoded text in the source", (
   assert.equal(source.indexOf(escaped), fact.start);
   assert.equal(source.slice(fact.start, fact.end), escaped);
 });
+
+const fourSectionIncident = `# Checkout outage incident
+
+## Timeline
+- 10:00 alerts fired
+- 10:15 bad deploy identified
+
+## Indicators
+- Elevated 5xx rate on checkout
+- Cache miss spike in edge
+
+## Impact
+Checkout unavailable for forty minutes across US-EAST.
+
+## Handoff
+- Rollback completed by platform
+- Owner remains on-call overnight
+`;
+
+test("four-section incident report yields canonical blocks, informs edges, and exact offsets", () => {
+  const result = extractScene(fourSectionIncident, "engineer");
+  assert.equal(result.fallback, false);
+  assert.equal(result.document.warnings.length, 0);
+  assert.equal(result.document.title, "Checkout outage incident");
+  assert.match(result.document.summary, /incident/i);
+  assert.deepEqual(result.document.blocks.map((b) => b.label), ["Timeline", "Indicators", "Impact", "Handoff"]);
+  assert.deepEqual(result.document.blocks.map((b) => b.kind), ["step", "source", "step", "step"]);
+  assert.equal(result.document.edges.length, 3);
+  assert.deepEqual(result.document.edges.map((e) => e.label), ["informs", "informs", "informs"]);
+  assert.deepEqual(
+    result.document.edges.map((e) => [e.from, e.to]),
+    [
+      [result.document.blocks[0].id, result.document.blocks[1].id],
+      [result.document.blocks[1].id, result.document.blocks[2].id],
+      [result.document.blocks[2].id, result.document.blocks[3].id],
+    ],
+  );
+  for (const fact of result.document.facts) {
+    assert.equal(fourSectionIncident.slice(fact.start, fact.end), fact.text);
+  }
+  const impact = result.document.blocks.find((b) => b.label === "Impact")!;
+  const impactFact = result.document.facts.find((f) => impact.factIds.includes(f.id))!;
+  assert.equal(impactFact.text, "Checkout unavailable for forty minutes across US-EAST.");
+  const edgeToImpact = result.document.edges[1];
+  assert.equal(edgeToImpact.factIds[0], impact.factIds[0]);
+  assert.equal(validateSceneDocument(result.document).ok, true);
+});
+
+test("incident aliases and numbered timeline entries are recognized", () => {
+  const source = `# Breach postmortem
+
+## Chronology
+1. Detected anomalous login
+2. Contained the account
+
+## Indicators of Compromise
+- Suspicious IP observed
+
+## Scope
+Customer portal login affected overnight.
+
+## Next steps
+- Rotate credentials
+- Notify account owners
+`;
+  const result = extractScene(source, "student");
+  assert.equal(result.fallback, false);
+  assert.deepEqual(result.document.blocks.map((b) => b.label), ["Timeline", "Indicators", "Impact", "Handoff"]);
+  const timeline = result.document.blocks.find((b) => b.label === "Timeline")!;
+  const texts = timeline.factIds.map((id) => result.document.facts.find((f) => f.id === id)!.text);
+  assert.ok(texts.includes("Detected anomalous login"));
+  assert.ok(texts.includes("Contained the account"));
+  for (const fact of result.document.facts) {
+    assert.equal(source.slice(fact.start, fact.end), fact.text);
+  }
+  assert.equal(validateSceneDocument(result.document).ok, true);
+});
+
+test("two recognized incident sections produce only those blocks and one edge", () => {
+  const source = `# Service compromise report
+
+## Timeline
+- First alert at 09:12
+
+## Handoff
+- Transfer ownership to security
+`;
+  const result = extractScene(source, "exec");
+  assert.equal(result.fallback, false);
+  assert.deepEqual(result.document.blocks.map((b) => b.label), ["Timeline", "Handoff"]);
+  assert.equal(result.document.edges.length, 1);
+  assert.equal(result.document.edges[0].label, "informs");
+  assert.equal(result.document.edges[0].from, result.document.blocks[0].id);
+  assert.equal(result.document.edges[0].to, result.document.blocks[1].id);
+  assert.equal(result.document.edges[0].factIds[0], result.document.blocks[1].factIds[0]);
+  assert.equal(validateSceneDocument(result.document).ok, true);
+});
+
+test("generic Impact heading without an incident signal stays on the existing path", () => {
+  const source = `# Product roadmap
+
+## Impact
+- Faster onboarding
+
+## Next steps
+- Ship the funnel
+`;
+  const result = extractScene(source, "engineer");
+  // Existing generic path: Markdown headings become blocks; without arrows this is fallback.
+  assert.equal(result.fallback, true);
+  assert.match(result.document.warnings[0], /fallback/i);
+  assert.deepEqual(result.document.blocks.map((b) => b.label), ["Source", "Process", "Artifact"]);
+  assert.equal(result.document.edges.some((e) => e.label === "informs"), false);
+});
+
+test("incident extraction respects scene fact caps", () => {
+  const bullets = Array.from({ length: SCENE_LIMITS.facts + 4 }, (_, i) => `- Signal ${i}`).join("\n");
+  const source = `# Network outage incident\n\n## Timeline\n${bullets}\n\n## Impact\n- Users blocked\n`;
+  const result = extractScene(source, "engineer");
+  assert.equal(result.fallback, false);
+  assert.ok(result.document.facts.length <= SCENE_LIMITS.facts);
+  assert.ok(result.document.blocks.length <= SCENE_LIMITS.blocks);
+  assert.ok(result.document.edges.length <= SCENE_LIMITS.edges);
+  assert.equal(validateSceneDocument(result.document).ok, true);
+});
+
+test("unrecognized intervening headings do not leak into prior incident sections", () => {
+  const source = `# Checkout outage incident
+
+## Timeline
+- 10:00 alerts fired
+- 10:15 bad deploy identified
+
+## Root cause
+- Config push skipped canary
+- Feature flag left enabled overnight
+
+## Impact
+Checkout unavailable for forty minutes across US-EAST.
+`;
+  const result = extractScene(source, "engineer");
+  assert.equal(result.fallback, false);
+  assert.deepEqual(result.document.blocks.map((b) => b.label), ["Timeline", "Impact"]);
+  assert.equal(result.document.edges.length, 1);
+  assert.equal(result.document.edges[0].label, "informs");
+  assert.equal(result.document.edges[0].from, result.document.blocks[0].id);
+  assert.equal(result.document.edges[0].to, result.document.blocks[1].id);
+
+  const timeline = result.document.blocks.find((b) => b.label === "Timeline")!;
+  const timelineTexts = timeline.factIds.map((id) => result.document.facts.find((f) => f.id === id)!.text);
+  assert.deepEqual(timelineTexts, ["10:00 alerts fired", "10:15 bad deploy identified"]);
+
+  const rootCauseBullets = ["Config push skipped canary", "Feature flag left enabled overnight"];
+  for (const text of rootCauseBullets) {
+    assert.equal(result.document.facts.some((f) => f.text === text), false);
+    for (const block of result.document.blocks) {
+      assert.equal(
+        block.factIds.some((id) => result.document.facts.find((f) => f.id === id)?.text === text),
+        false,
+      );
+    }
+  }
+
+  for (const fact of result.document.facts) {
+    assert.equal(source.slice(fact.start, fact.end), fact.text);
+  }
+  assert.equal(validateSceneDocument(result.document).ok, true);
+});
