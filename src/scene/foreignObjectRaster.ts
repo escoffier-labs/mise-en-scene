@@ -1,11 +1,12 @@
 // Capability probe for SVG foreignObject rasterization.
 //
-// Scene cards use foreignObject + XHTML for wrapped text. PNG and WebM exports
-// draw that same SVG onto a canvas, so browsers that skip foreignObject content
-// when decoding SVG-as-image produce empty cards. Checking SVGForeignObjectElement
-// or sniffing the user agent is not enough; this module loads a tiny inline SVG
-// with a control background and a uniquely colored foreignObject, draws it, and
-// reads a pixel to see whether the foreign content survived.
+// Scene cards use foreignObject + XHTML for wrapped text. PNG, PDF, and WebM
+// exports draw that same SVG onto a canvas, so browsers that skip foreignObject
+// content when decoding SVG-as-image produce empty cards. Checking
+// SVGForeignObjectElement or sniffing the user agent is not enough; this module
+// loads a tiny inline SVG with a control background and a uniquely colored
+// foreignObject, draws it, and reads a pixel to see whether the foreign content
+// survived.
 
 import { svgToDataUrl } from "./raster.ts";
 
@@ -50,9 +51,12 @@ export function foreignObjectProbeSvg(
   ].join("");
 }
 
-export function foreignObjectRasterNotice(kind: "png" | "video"): string {
+export function foreignObjectRasterNotice(kind: "png" | "video" | "pdf"): string {
   if (kind === "png") {
     return "This browser cannot rasterize foreignObject content for PNG export. Use SVG or HTML export instead.";
+  }
+  if (kind === "pdf") {
+    return "This browser cannot rasterize foreignObject content for PDF export. Use SVG or HTML export instead.";
   }
   return "This browser cannot rasterize foreignObject content for video recording. Use SVG or HTML export instead.";
 }
@@ -116,6 +120,14 @@ export async function preparePngRasterExport(opts: {
 } = {}): Promise<RasterExportResult> {
   const supported = await (opts.canRasterize ?? canRasterizeForeignObject)();
   if (!supported) return { ok: false, notice: foreignObjectRasterNotice("png") };
+  return { ok: true };
+}
+
+export async function preparePdfRasterExport(opts: {
+  canRasterize?: () => Promise<boolean>;
+} = {}): Promise<RasterExportResult> {
+  const supported = await (opts.canRasterize ?? canRasterizeForeignObject)();
+  if (!supported) return { ok: false, notice: foreignObjectRasterNotice("pdf") };
   return { ok: true };
 }
 

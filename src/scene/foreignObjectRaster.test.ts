@@ -6,6 +6,7 @@ import {
   createCachedForeignObjectRasterCheck,
   foreignObjectProbeSvg,
   foreignObjectRasterNotice,
+  preparePdfRasterExport,
   preparePngRasterExport,
   prepareVideoRasterExport,
   probeForeignObjectRaster,
@@ -137,6 +138,28 @@ test("PNG guard returns ok when the probe succeeds", async () => {
   assert.deepEqual(result, { ok: true });
 });
 
+test("PDF guard returns unsupported notice when the probe fails", async () => {
+  let probed = 0;
+  const result = await preparePdfRasterExport({
+    canRasterize: async () => {
+      probed += 1;
+      return false;
+    },
+  });
+  assert.equal(probed, 1);
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.match(result.notice, /PDF/i);
+    assert.match(result.notice, /foreignObject/i);
+    assert.match(result.notice, /SVG or HTML/i);
+  }
+});
+
+test("PDF guard returns ok when the probe succeeds", async () => {
+  const result = await preparePdfRasterExport({ canRasterize: async () => true });
+  assert.deepEqual(result, { ok: true });
+});
+
 test("video guard keeps media-support precheck before the foreignObject probe", async () => {
   let probed = 0;
   const mediaBlocked = await prepareVideoRasterExport({
@@ -176,11 +199,16 @@ test("video guard returns ok when media and foreignObject checks pass", async ()
 
 test("format-specific notices stay distinct and actionable", () => {
   const png = foreignObjectRasterNotice("png");
+  const pdf = foreignObjectRasterNotice("pdf");
   const video = foreignObjectRasterNotice("video");
+  assert.notEqual(png, pdf);
   assert.notEqual(png, video);
+  assert.notEqual(pdf, video);
   assert.match(png, /PNG/);
+  assert.match(pdf, /PDF/);
   assert.match(video, /video|recording/i);
   assert.match(png, /SVG or HTML/);
+  assert.match(pdf, /SVG or HTML/);
   assert.match(video, /SVG or HTML/);
 });
 
@@ -192,10 +220,14 @@ test("probe SVG stays far smaller than a scene export canvas", () => {
   assert.ok(height > 0 && height < SCENE_HEIGHT);
 });
 
-test("App wires both raster export guards", () => {
+test("App wires raster export guards including PDF", () => {
   const app = readFileSync(fileURLToPath(new URL("../App.tsx", import.meta.url)), "utf8");
   assert.match(app, /from\s+["']\.\/scene\/foreignObjectRaster["']/);
   assert.match(app, /\bpreparePngRasterExport\b/);
+  assert.match(app, /\bpreparePdfRasterExport\b/);
   assert.match(app, /\bprepareVideoRasterExport\b/);
   assert.match(app, /\bmediaSupported\b/);
+  assert.match(app, /\bpdfFromJpeg\b/);
+  assert.match(app, /\bpdfBlob\b/);
+  assert.match(app, /Export PDF/);
 });
