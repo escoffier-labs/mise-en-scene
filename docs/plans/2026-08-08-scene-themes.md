@@ -21,9 +21,9 @@
 - Modify: `src/sceneStyles.ts`
 - Create: `src/sceneStyles.test.ts`
 
-- [ ] Write a failing test that imports `DEFAULT_SCENE_THEME`, `SCENE_THEME_IDS`, `SCENE_THEMES`, `getSceneTheme`, `isSceneThemeId`, and `sceneCssFor`; asserts the default is `ledger`; asserts the IDs are exactly `ledger` and `paper`; verifies `isSceneThemeId` accepts those values and rejects an unknown string; verifies ledger retains `bg: "#0d1014"` and `accent: "#e0a45c"`; verifies paper has different `bg` and `accent`; and verifies `sceneCssFor("paper")` contains the paper text, background-stroke, and accent literals while containing neither `var(` nor `#e0a45c`.
-- [ ] Run the focused test through Brigade: `brigade work verify run --target . --command "npm test -- src/sceneStyles.test.ts"`. Expect failure because the named exports do not exist. If dependencies are unavailable, record that exact baseline limitation and continue without installing packages.
-- [ ] Replace the single hardcoded palette with these exact public foundations:
+- [x] Write a failing test that imports `DEFAULT_SCENE_THEME`, `SCENE_THEME_IDS`, `SCENE_THEMES`, `getSceneTheme`, `isSceneThemeId`, and `sceneCssFor`; asserts the default is `ledger`; asserts the IDs are exactly `ledger` and `paper`; verifies `isSceneThemeId` accepts those values and rejects an unknown string; verifies ledger retains `bg: "#0d1014"` and `accent: "#e0a45c"`; verifies paper has different `bg` and `accent`; and verifies `sceneCssFor("paper")` contains the paper text, background-stroke, and accent literals while containing neither `var(` nor `#e0a45c`.
+- [x] Run the focused test through Brigade: `brigade work verify run --target . --command "npm test -- src/sceneStyles.test.ts"`. Expect failure because the named exports do not exist. If dependencies are unavailable, record that exact baseline limitation and continue without installing packages.
+- [x] Replace the single hardcoded palette with these exact public foundations:
 
 ```ts
 export type SceneThemeId = "ledger" | "paper";
@@ -53,9 +53,9 @@ export function getSceneTheme(theme: SceneThemeId = DEFAULT_SCENE_THEME): SceneP
 }
 ```
 
-- [ ] Turn the current `sceneCss` template into `sceneCssFor(theme: SceneThemeId = DEFAULT_SCENE_THEME)`, bind `const palette = getSceneTheme(theme)`, and replace each template reference from `T` to `palette`. Preserve `export const sceneCss = sceneCssFor()` for compatibility.
-- [ ] Run the focused test again through Brigade. Expect all palette tests to pass, or record the unchanged dependency limitation.
-- [ ] Commit: `git add src/sceneStyles.ts src/sceneStyles.test.ts && git commit -m "feat: add literal scene palettes"`.
+- [x] Turn the current `sceneCss` template into `sceneCssFor(theme: SceneThemeId = DEFAULT_SCENE_THEME)`, bind `const palette = getSceneTheme(theme)`, and replace each template reference from `T` to `palette`. Preserve `export const sceneCss = sceneCssFor()` for compatibility.
+- [x] Run the focused test again through Brigade. Expect all palette tests to pass, or record the unchanged dependency limitation.
+- [x] Commit: `git add src/sceneStyles.ts src/sceneStyles.test.ts && git commit -m "feat: add literal scene palettes"`.
 
 ### Task 2: Thread the theme through shared rendering and exports
 
