@@ -118,11 +118,17 @@ function parseWalkSteps(html: string) {
 }
 
 test("HTML export embeds safe scene data and interaction hooks", () => {
-  const html = htmlDocument("<svg></svg>", { schemaVersion: 1, title: "</script><b>x</b>" });
+  const html = htmlDocument("<svg></svg>", { schemaVersion: 1, title: "</script><b>x</b>", warnings: [] });
   assert.match(html, /application\/json/);
   assert.match(html, /data-view/);
   assert.doesNotMatch(html, /<\/script><b>/);
   assert.match(html, /schemaVersion/);
+});
+
+test("HTML export renders crawl warnings above the scene", () => {
+  const html = htmlDocument("<svg></svg>", { warnings: ["Remote crawl limited to 80 candidate files."] });
+  assert.match(html, /class="warnings"/);
+  assert.match(html, /Remote crawl limited to 80 candidate files\./);
 });
 
 test("SVG export adds namespace and contains no script", () => {

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { fetchRepoFiles, INCOMPLETE_TREE_MESSAGE } from "./github.ts";
+import { fetchRepoFiles, GITHUB_RATE_LIMIT_MESSAGE, INCOMPLETE_TREE_MESSAGE } from "./github.ts";
+import { REMOTE_CANDIDATE_CAP_WARNING, REMOTE_CANDIDATE_LIMIT } from "./crawl.ts";
 
 type MockResponse = {
   ok: boolean;
@@ -74,7 +75,7 @@ test("complete recursive tree fetches candidate blobs and returns their text", a
     throw new Error(`unexpected fetch: ${url}`);
   };
 
-  const files = await fetchRepoFiles({ owner: "acme", repo: "demo" }, fetchMock as typeof fetch);
+  const { files } = await fetchRepoFiles({ owner: "acme", repo: "demo" }, fetchMock as typeof fetch);
   assert.deepEqual(
     files.map((file) => file.path).sort(),
     ["README.md", "openapi.yaml"],
@@ -82,6 +83,29 @@ test("complete recursive tree fetches candidate blobs and returns their text", a
   assert.ok(files.some((file) => file.path === "README.md" && file.text.includes("Web -> API")));
   assert.ok(calls.some((url) => url.includes("raw.githubusercontent.com")));
   assert.ok(!calls.some((url) => url.includes("src/index.ts")));
+});
+
+test("remote candidate cap surfaces a truncation warning without failing the fetch", async () => {
+  const tree: Array<{ type: string; path?: string; size?: number }> = [];
+  for (let index = 0; index < REMOTE_CANDIDATE_LIMIT + 3; index++) {
+    tree.push({ type: "blob", path: `docs/file-${String(index).padStart(3, "0")}.md`, size: 64 });
+  }
+  const fetchMock = async (input: RequestInfo | URL): Promise<MockResponse> => {
+    const url = String(input);
+    if (url.endsWith("/repos/acme/big")) return jsonResponse({ default_branch: "main" });
+    if (url.includes("/git/trees/main?recursive=1")) return jsonResponse({ truncated: false, tree });
+    if (url.includes("raw.githubusercontent.com")) return textResponse("A -> B: relates");
+    throw new Error(`unexpected fetch: ${url}`);
+  };
+
+  const { files, warnings } = await fetchRepoFiles({ owner: "acme", repo: "big" }, fetchMock as typeof fetch);
+  assert.equal(files.length, REMOTE_CANDIDATE_LIMIT);
+  assert.deepEqual(warnings, [REMOTE_CANDIDATE_CAP_WARNING]);
+});
+
+test("rate-limit error wording points at guidance", () => {
+  assert.match(GITHUB_RATE_LIMIT_MESSAGE, /rate limit/i);
+  assert.match(GITHUB_RATE_LIMIT_MESSAGE, /README/i);
 });
 
 test("incomplete-tree error wording stays actionable", () => {

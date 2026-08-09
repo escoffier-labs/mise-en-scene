@@ -7,10 +7,10 @@ import { preparePngRasterExport, prepareVideoRasterExport } from "./scene/foreig
 import { provenanceNarrative } from "./scene/provenance";
 import { PNG_SCALE, SCENE_HEIGHT, SCENE_WIDTH, sizedSvg, svgToDataUrl } from "./scene/raster";
 import { stepSpotlight, stepViewport, walkthroughSteps, type Viewport } from "./scene/walkthrough";
-import { CRAWL_MAX_BYTES, CRAWL_MAX_FILES, isCrawlableFile, isIgnoredDir, parseRepoUrl, synthesizeSource, type CrawlFile } from "./scene/crawl";
+import { CRAWL_FILE_CAP_WARNING, CRAWL_MAX_BYTES, CRAWL_MAX_FILES, isCrawlableFile, isIgnoredDir, parseRepoUrl, synthesizeSource, type CrawlFile } from "./scene/crawl";
 import { fetchRepoFiles } from "./scene/github";
 import { T } from "./sceneStyles";
-import { CONFIDENCE_LEVELS, editBlock, editEdge, type Audience, type Confidence, type SceneDocument, type SceneView } from "./scene/types";
+import { CONFIDENCE_LEVELS, editBlock, editEdge, SCENE_LIMITS, type Audience, type Confidence, type SceneDocument, type SceneView } from "./scene/types";
 import { validateSceneDocument } from "./scene/validate";
 
 const sampleSource = `# Checkout system
@@ -28,14 +28,14 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 
 // Walk a File System Access directory handle, collecting crawlable text files
 // within the size and count caps and skipping vendored directories.
-async function readDirectory(dir: any, prefix = "", files: CrawlFile[] = []): Promise<CrawlFile[]> {
+async function readDirectory(dir: any, prefix = "", files: CrawlFile[] = []): Promise<{ files: CrawlFile[]; hitFileCap: boolean }> {
   for await (const entry of dir.values()) {
     if (files.length >= CRAWL_MAX_FILES) break;
     const path = prefix ? `${prefix}/${entry.name}` : entry.name;
     if (entry.kind === "directory") { if (!isIgnoredDir(entry.name)) await readDirectory(entry, path, files); }
     else if (isCrawlableFile(path)) { const file = await entry.getFile(); if (file.size <= CRAWL_MAX_BYTES) files.push({ path, text: await file.text() }); }
   }
-  return files;
+  return { files, hitFileCap: files.length >= CRAWL_MAX_FILES };
 }
 
 export default function App() {
@@ -51,23 +51,27 @@ export default function App() {
   const selected = selection?.type === "block" ? document.blocks.find((x) => x.id === selection.id) : selection?.type === "edge" ? document.edges.find((x) => x.id === selection.id) : undefined;
   const selectedFacts = selected ? document.facts.filter((fact) => selected.factIds.includes(fact.id)) : [];
 
-  function regenerate(next: string, audience = document.audience) {
+  function regenerate(next: string, audience = document.audience, extraWarnings: string[] = []) {
     if (dirty && !window.confirm("Regenerate the scene and discard manual edits?")) return false;
     const result = extractScene(next, audience);
     result.document.view = document.view;
+    if (extraWarnings.length) {
+      result.document.warnings = [...extraWarnings, ...result.document.warnings].slice(0, SCENE_LIMITS.warnings);
+    }
     setSource(next); setDocument(result.document); setDirty(false); setSelection({ type: "block", id: result.document.blocks[0]?.id });
     localStorage.setItem("mise-source", next); setNotice(result.document.warnings[0] || `Extracted ${result.document.blocks.length} elements`);
     return true;
   }
-  function applyCrawl(files: CrawlFile[]) {
+  function applyCrawl(files: CrawlFile[], crawlWarnings: string[] = []) {
     const result = synthesizeSource(files);
-    if (!result.source.trim()) { setNotice(result.warnings[0] || "No usable source found in the repository."); return; }
-    if (regenerate(result.source)) setNotice(result.warnings.length ? `${result.summary} ${result.warnings[0]}` : result.summary);
+    const warnings = [...crawlWarnings, ...result.warnings];
+    if (!result.source.trim()) { setNotice(warnings[0] || "No usable source found in the repository."); return; }
+    if (regenerate(result.source, document.audience, warnings)) setNotice(warnings.length ? `${result.summary} ${warnings[0]}` : result.summary);
   }
   async function openFolder() {
     const picker = (globalThis as any).showDirectoryPicker;
     if (typeof picker !== "function") { openFolderFallback(); return; }
-    try { setNotice("Reading folder..."); applyCrawl(await readDirectory(await picker.call(globalThis, { mode: "read" }))); }
+    try { setNotice("Reading folder..."); const { files, hitFileCap } = await readDirectory(await picker.call(globalThis, { mode: "read" })); applyCrawl(files, hitFileCap ? [CRAWL_FILE_CAP_WARNING] : []); }
     catch (error) { if ((error as any)?.name === "AbortError") { setNotice("Ready"); return; } setNotice(`Folder crawl failed: ${error instanceof Error ? error.message : "unknown error"}`); }
   }
   function openFolderFallback() {
@@ -75,14 +79,14 @@ export default function App() {
     input.onchange = async () => {
       const files: CrawlFile[] = [];
       for (const file of Array.from(input.files || [])) { if (files.length >= CRAWL_MAX_FILES) break; const path = (file as any).webkitRelativePath || file.name; if (isCrawlableFile(path) && file.size <= CRAWL_MAX_BYTES) files.push({ path, text: await file.text() }); }
-      applyCrawl(files);
+      applyCrawl(files, files.length >= CRAWL_MAX_FILES ? [CRAWL_FILE_CAP_WARNING] : []);
     };
     input.click();
   }
   async function openRepoUrl() {
     const input = window.prompt("GitHub repository URL or owner/repo"); if (!input) return;
     const ref = parseRepoUrl(input); if (!ref) { setNotice("Could not parse that repository reference."); return; }
-    try { setNotice(`Fetching ${ref.owner}/${ref.repo}...`); applyCrawl(await fetchRepoFiles(ref)); }
+    try { setNotice(`Fetching ${ref.owner}/${ref.repo}...`); const { files, warnings } = await fetchRepoFiles(ref); applyCrawl(files, warnings); }
     catch (error) { setNotice(`Repository fetch failed: ${error instanceof Error ? error.message : "unknown error"}`); }
   }
 

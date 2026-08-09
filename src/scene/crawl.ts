@@ -15,6 +15,14 @@ export const CRAWL_MAX_FILES = 200;
 export const CRAWL_MAX_BYTES = 512 * 1024;
 export const REMOTE_CANDIDATE_LIMIT = 80;
 
+export const CRAWL_FILE_CAP_WARNING =
+  `Crawl stopped at the ${CRAWL_MAX_FILES}-file limit; additional docs in the folder were not scanned. Open a narrower folder or paste the source directly.`;
+
+export const REMOTE_CANDIDATE_CAP_WARNING =
+  `Remote crawl limited to ${REMOTE_CANDIDATE_LIMIT} candidate files; additional docs in the repository were not fetched. Open the folder locally or paste the source directly.`;
+
+export type RemoteCandidateSelection = { paths: string[]; truncated: boolean; eligible: number };
+
 export type TreeBlob = { type: string; path?: string; size?: number };
 
 const IGNORED_DIRS = new Set(["node_modules", ".git", "dist", "build", "out", "vendor", "coverage", ".next", ".cache", ".vercel"]);
@@ -42,11 +50,11 @@ export function isRemoteCandidate(path: string): boolean {
   return /(openapi|swagger|api|spec)/i.test(path) || !path.includes("/");
 }
 
-export function selectRemoteCandidatePaths(tree: TreeBlob[]): string[] {
-  return tree
+export function selectRemoteCandidatePaths(tree: TreeBlob[]): RemoteCandidateSelection {
+  const eligible = tree
     .filter((node) => node.type === "blob" && node.path && isRemoteCandidate(node.path) && (node.size ?? 0) <= CRAWL_MAX_BYTES)
-    .map((node) => node.path as string)
-    .slice(0, REMOTE_CANDIDATE_LIMIT);
+    .map((node) => node.path as string);
+  return { paths: eligible.slice(0, REMOTE_CANDIDATE_LIMIT), truncated: eligible.length > REMOTE_CANDIDATE_LIMIT, eligible: eligible.length };
 }
 
 export function parseRepoUrl(input: string): RepoRef | null {
