@@ -91,6 +91,31 @@ scene one relationship at a time, with a camera that zooms to each connection
 and spotlight highlighting, as a self-contained animated HTML file or a recorded
 WebM video.
 
+## Headless CLI export
+
+For CI and docs builds, the same `SceneSvg` renderer can run without opening the
+studio. SVG, HTML, JSON, and walkthrough HTML use React SSR only. PNG still needs
+a local Chromium binary so `foreignObject` card text matches the browser export
+(set `CHROME_PATH` or pass `--chrome-path` if auto-detect misses it).
+
+```bash
+# From a saved scene JSON
+npm run export -- scene.json -o scene.svg
+npm run export -- scene.json -f png -o scene.png
+
+# From source text (extract, then render)
+npm run export -- examples/brigade-source.md --view sequence -o sequence.svg
+
+# Walkthrough HTML
+npm run export -- scene.json -f walkthrough -o walk.html
+```
+
+After `npm install`, the `mise-en-scene` bin is also available:
+
+```bash
+npx mise-en-scene --help
+```
+
 ## Example
 
 The [`examples/`](examples/) directory holds a full run built from one short
@@ -119,6 +144,8 @@ orchestration pipeline and its sidecars.
 - `src/scene/layout.ts`: deterministic architecture and sequence layouts.
 - `src/scene/validate.ts`: imported JSON validation.
 - `src/scene/exports.tsx`: standalone HTML, SVG, and walkthrough serialization.
+- `src/cli/`: headless export CLI (load scene or source, render, optional Chromium PNG).
+- `scripts/mise-en-scene.mjs`: CLI launcher (esbuild-bundles the React SSR entry).
 - `src/scene/raster.ts`: SVG-to-PNG raster helpers.
 - `src/scene/walkthrough.ts`: the shared tour model for the walkthrough exports.
 - `src/sceneStyles.ts`: styles for the SVG internals (injected inside the SVG)
@@ -156,11 +183,13 @@ It is not:
 This is an early working product. Source-derived scenes, evidence inspection,
 architecture and sequence views, JSON round trips, editing, repository crawling
 (local folders and public repos), OpenAPI JSON and YAML, and HTML, SVG, JSON,
-PNG, and walkthrough exports work today. Repository crawling and OpenAPI YAML run
-entirely in the browser. PNG and walkthrough exports rasterize the scene, so they
-depend on browser support for `foreignObject` rasterization (Chromium and
-Firefox); video recording uses `MediaRecorder` and falls back to a clear notice
-where unsupported.
+PNG, and walkthrough exports work today. A headless CLI can emit the same SVG,
+HTML, JSON, walkthrough, and PNG artifacts for CI. Repository crawling and
+OpenAPI YAML run entirely in the browser. Studio PNG and walkthrough video
+exports rasterize the scene, so they depend on browser support for
+`foreignObject` rasterization (Chromium and Firefox); video recording uses
+`MediaRecorder` and falls back to a clear notice where unsupported. CLI PNG
+export shells out to a local Chromium binary for the same reason.
 
 ## Naming
 

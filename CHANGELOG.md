@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Headless CLI export pipeline (`npm run export` / `mise-en-scene`) that renders a saved scene JSON or source file to SVG, HTML, JSON, walkthrough HTML, and PNG without opening the studio; SVG and text formats use React SSR, PNG uses a local Chromium binary when available.
 - Deterministic source-derived blocks, relationships, facts, and evidence ranges.
 - Structured OpenAPI JSON extraction for API, tag, and operation elements.
 - OpenAPI YAML extraction through a dependency-free parser scoped to the OpenAPI subset.
