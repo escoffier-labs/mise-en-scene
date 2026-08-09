@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SceneSvg } from "./components/SceneSvg";
 import { extractScene } from "./scene/extract";
 import { standaloneHtml, standaloneSvg, standaloneWalkthrough } from "./scene/exports";
@@ -6,12 +6,15 @@ import { layoutScene } from "./scene/layout";
 import { preparePngRasterExport, prepareVideoRasterExport } from "./scene/foreignObjectRaster";
 import { provenanceNarrative } from "./scene/provenance";
 import { PNG_SCALE, SCENE_HEIGHT, SCENE_WIDTH, sizedSvg, svgToDataUrl } from "./scene/raster";
-import { stepSpotlight, stepViewport, walkthroughSteps, type Viewport } from "./scene/walkthrough";
-import { CRAWL_FILE_CAP_WARNING, CRAWL_MAX_BYTES, CRAWL_MAX_FILES, isCrawlableFile, isIgnoredDir, parseRepoUrl, synthesizeSource, type CrawlFile } from "./scene/crawl";
+import { stepSpotlight, walkthroughSteps, type Viewport } from "./scene/walkthrough";
+import { planWalkthroughFrames } from "./scene/walkthroughPlan";
+import { formatControlState, type EncodeCapabilities, type WalkthroughVideoFormat } from "./scene/walkthroughEncode";
+import { CRAWL_FILE_CAP_WARNING, CRAWL_MAX_BYTES, CRAWL_MAX_FILES, isCrawlableFile, isIgnoredDir, parseRepoUrl, selectRemoteCandidatePaths, synthesizeSource, type CrawlFile, type RepoRef } from "./scene/crawl";
 import { fetchRepoFiles } from "./scene/github";
-import { T } from "./sceneStyles";
+import { DEFAULT_SCENE_THEME, getSceneTheme, isSceneThemeId, type SceneThemeId } from "./sceneStyles";
 import { CONFIDENCE_LEVELS, editBlock, editEdge, SCENE_LIMITS, type Audience, type Confidence, type SceneDocument, type SceneView } from "./scene/types";
 import { validateSceneDocument } from "./scene/validate";
+import { encodeWalkthroughVideo, isVideoExportSupported, probeWalkthroughEncodeCapabilities } from "./walkthroughRecorder";
 
 const sampleSource = `# Checkout system
 Customer -> Web app: starts checkout
@@ -38,18 +41,36 @@ async function readDirectory(dir: any, prefix = "", files: CrawlFile[] = []): Pr
   return { files, hitFileCap: files.length >= CRAWL_MAX_FILES };
 }
 
+function loadStoredTheme(): SceneThemeId {
+  const stored = localStorage.getItem("mise-theme");
+  return isSceneThemeId(stored) ? stored : DEFAULT_SCENE_THEME;
+}
+
 export default function App() {
   const initial = useMemo(() => extractScene(localStorage.getItem("mise-source") || sampleSource, "engineer").document, []);
   const [document, setDocument] = useState<SceneDocument>(initial);
   const [source, setSource] = useState(initial.source.text);
   const [selection, setSelection] = useState<Selection>({ type: "block", id: initial.blocks[0]?.id });
   const [review, setReview] = useState(false);
+  const [theme, setTheme] = useState<SceneThemeId>(loadStoredTheme);
   const [dirty, setDirty] = useState(false);
   const [notice, setNotice] = useState("Ready");
+  const [encodeCaps, setEncodeCaps] = useState<EncodeCapabilities | null>(null);
   const sourceRef = useRef<HTMLTextAreaElement>(null);
   const scene = useMemo(() => layoutScene(document, document.view), [document]);
   const selected = selection?.type === "block" ? document.blocks.find((x) => x.id === selection.id) : selection?.type === "edge" ? document.edges.find((x) => x.id === selection.id) : undefined;
   const selectedFacts = selected ? document.facts.filter((fact) => selected.factIds.includes(fact.id)) : [];
+  const videoFormats = encodeCaps ? formatControlState(encodeCaps) : { webm: false, mp4: false };
+
+  useEffect(() => {
+    let cancelled = false;
+    void probeWalkthroughEncodeCapabilities()
+      .then((caps) => { if (!cancelled) setEncodeCaps(caps); })
+      .catch(() => {
+        if (!cancelled) setEncodeCaps({ mediabunnyVp9Webm: false, mediabunnyAvcMp4: false, mediaRecorderWebm: false });
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   function regenerate(next: string, audience = document.audience, extraWarnings: string[] = []) {
     if (dirty && !window.confirm("Regenerate the scene and discard manual edits?")) return false;
@@ -91,6 +112,11 @@ export default function App() {
   }
 
   function setView(view: SceneView) { setDocument((current) => ({ ...current, view })); setNotice(`${view} view`); }
+  function chooseTheme(next: SceneThemeId) {
+    setTheme(next);
+    localStorage.setItem("mise-theme", next);
+    setNotice(`Theme: ${next === "ledger" ? "Ledger" : "Paper"}`);
+  }
   function select(type: "block" | "edge", id: string) { setSelection({ type, id }); }
   function updateSelected(field: "label" | "detail", value: string) {
     if (!selection) return;
@@ -115,7 +141,7 @@ export default function App() {
     const gate = await preparePngRasterExport();
     if (!gate.ok) { setNotice(gate.notice); return; }
     try {
-      const img=await loadImage(svgToDataUrl(sizedSvg(standaloneSvg(scene,review))));
+      const img=await loadImage(svgToDataUrl(sizedSvg(standaloneSvg(scene,review,null,undefined,theme))));
       const canvas=globalThis.document.createElement("canvas"); canvas.width=SCENE_WIDTH*PNG_SCALE; canvas.height=SCENE_HEIGHT*PNG_SCALE;
       const ctx=canvas.getContext("2d"); if (!ctx) throw new Error("canvas is unavailable");
       ctx.scale(PNG_SCALE,PNG_SCALE); ctx.drawImage(img,0,0,SCENE_WIDTH,SCENE_HEIGHT);
@@ -123,39 +149,36 @@ export default function App() {
       saveBlob("mise-en-scene.png",blob); setNotice("mise-en-scene.png exported");
     } catch (error) { setNotice(`PNG export failed: ${error instanceof Error ? error.message : "unknown error"}`); }
   }
-  async function recordWalkthrough() {
-    const Recorder=(globalThis as any).MediaRecorder;
-    const probe=globalThis.document.createElement("canvas");
-    const mediaSupported = typeof Recorder !== "undefined" && typeof (probe as any).captureStream === "function";
+  async function recordWalkthrough(format: WalkthroughVideoFormat) {
+    const caps = encodeCaps ?? await probeWalkthroughEncodeCapabilities();
+    if (!encodeCaps) setEncodeCaps(caps);
+    const mediaSupported = isVideoExportSupported(caps);
     const gate = await prepareVideoRasterExport({ mediaSupported });
     if (!gate.ok) { setNotice(gate.notice); return; }
-    const mime=["video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm"].find((t)=>Recorder.isTypeSupported?.(t)) || "video/webm";
     try {
-      setNotice("Recording walkthrough...");
+      setNotice(format === "mp4" ? "Encoding walkthrough (MP4)..." : "Encoding walkthrough...");
       const steps=walkthroughSteps(scene);
+      const plan=planWalkthroughFrames(scene);
       // Each step is rasterized once at full frame (spotlight baked in); the
-      // camera move is a canvas crop of that bitmap, so the pan and zoom are
-      // smooth without re-rasterizing per frame.
-      const frames=await Promise.all(steps.map((step)=>loadImage(svgToDataUrl(sizedSvg(standaloneSvg(scene,false,stepSpotlight(step)))))));
-      const views=steps.map((step)=>stepViewport(scene,step));
+      // camera move is a canvas crop of that bitmap driven by the frame plan.
+      const images=await Promise.all(steps.map((step)=>loadImage(svgToDataUrl(sizedSvg(standaloneSvg(scene,false,stepSpotlight(step),undefined,theme))))));
       const canvas=globalThis.document.createElement("canvas"); canvas.width=SCENE_WIDTH; canvas.height=SCENE_HEIGHT;
       const ctx=canvas.getContext("2d"); if (!ctx) throw new Error("canvas is unavailable");
-      const drawCrop=(img: HTMLImageElement, v: Viewport)=>{ ctx.fillStyle=T.bg; ctx.fillRect(0,0,SCENE_WIDTH,SCENE_HEIGHT); ctx.drawImage(img,v.x,v.y,v.w,v.h,0,0,SCENE_WIDTH,SCENE_HEIGHT); };
-      const lerp=(a: Viewport,b: Viewport,e: number): Viewport=>({ x:a.x+(b.x-a.x)*e, y:a.y+(b.y-a.y)*e, w:a.w+(b.w-a.w)*e, h:a.h+(b.h-a.h)*e });
-      const easeInOut=(t: number)=> t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
-      const pan=async (img: HTMLImageElement,from: Viewport,to: Viewport,ms: number)=>{ const n=Math.max(1,Math.round(ms/33)); for (let f=1;f<=n;f++){ drawCrop(img,lerp(from,to,easeInOut(f/n))); await sleep(33); } };
-      const hold=async (img: HTMLImageElement,v: Viewport,ms: number)=>{ drawCrop(img,v); await sleep(ms); };
-      const stream=(canvas as any).captureStream(30); const recorder=new Recorder(stream,{mimeType:mime}); const chunks: Blob[]=[];
-      recorder.ondataavailable=(e:any)=>{ if (e.data?.size) chunks.push(e.data); };
-      const finished=new Promise<Blob>((resolve)=>{ recorder.onstop=()=>resolve(new Blob(chunks,{type:mime})); });
-      recorder.start();
-      let prev=views[0];
-      await hold(frames[0],views[0],2000); // opening on the full scene
-      for (let k=1;k<steps.length;k++){ await pan(frames[k],prev,views[k],650); await hold(frames[k],views[k],1200); prev=views[k]; }
-      await pan(frames[0],prev,views[0],650); await hold(frames[0],views[0],1200); // pull back to close
-      recorder.stop();
-      saveBlob("mise-en-scene-walkthrough.webm",await finished); setNotice("mise-en-scene-walkthrough.webm recorded");
-    } catch (error) { setNotice(`Video recording failed: ${error instanceof Error ? error.message : "unknown error"}`); }
+      const drawCrop=(img: HTMLImageElement, v: Viewport)=>{ ctx.fillStyle=getSceneTheme(theme).bg; ctx.fillRect(0,0,SCENE_WIDTH,SCENE_HEIGHT); ctx.drawImage(img,v.x,v.y,v.w,v.h,0,0,SCENE_WIDTH,SCENE_HEIGHT); };
+      const result = await encodeWalkthroughVideo({
+        format,
+        plan,
+        images,
+        canvas,
+        drawCrop,
+        sleep,
+        probeCaps: async () => caps,
+        onProgress: setNotice,
+      });
+      if (!result.ok) { setNotice(result.notice); return; }
+      saveBlob(result.filename, result.blob);
+      setNotice(`${result.filename} exported`);
+    } catch (error) { setNotice(`Video encoding failed: ${error instanceof Error ? error.message : "unknown error"}`); }
   }
   async function importFile(file?: File) {
     if (!file) return;
@@ -168,13 +191,14 @@ export default function App() {
     <header className="topbar"><div><p className="eyebrow">Escoffier Labs &middot; the studio</p><h1 className="wordmark">mise-en-scene<span className="wordmark-cursor">_</span></h1></div>
       <div className="actions" aria-label="Artifact actions"><span className="export-status" role="status" aria-live="polite">{notice}</span>
         <label className="file-button">Import JSON<input type="file" accept="application/json,.json" onChange={(e)=>void importFile(e.target.files?.[0])}/></label>
-        <button disabled={!canExport} onClick={()=>download("mise-en-scene.svg",standaloneSvg(scene,review),"image/svg+xml")}>Export SVG</button>
+        <button disabled={!canExport} onClick={()=>download("mise-en-scene.svg",standaloneSvg(scene,review,null,undefined,theme),"image/svg+xml")}>Export SVG</button>
         <button disabled={!canExport} onClick={()=>void exportPng()}>Export PNG</button>
         <button disabled={!canExport} onClick={()=>download("mise-en-scene.json",JSON.stringify(scene,null,2),"application/json")}>Export JSON</button>
         <button disabled={!canExport} onClick={()=>download("mise-en-scene-provenance.txt",provenanceNarrative(scene),"text/plain")}>Export provenance</button>
-        <button disabled={!canExport} onClick={()=>download("mise-en-scene-walkthrough.html",standaloneWalkthrough(scene),"text/html")}>Walkthrough</button>
-        <button disabled={!canExport} onClick={()=>void recordWalkthrough()}>Record video</button>
-        <button className="primary" disabled={!canExport} onClick={()=>download("mise-en-scene.html",standaloneHtml(scene),"text/html")}>Export HTML</button>
+        <button disabled={!canExport} onClick={()=>download("mise-en-scene-walkthrough.html",standaloneWalkthrough(scene,theme),"text/html")}>Walkthrough</button>
+        <button disabled={!canExport || !videoFormats.webm} onClick={()=>void recordWalkthrough("webm")} title={videoFormats.webm ? "Encode VP9 WebM when capable, else MediaRecorder WebM" : "WebM encoding unavailable in this browser"}>Record WebM</button>
+        <button disabled={!canExport || !videoFormats.mp4} onClick={()=>void recordWalkthrough("mp4")} title={videoFormats.mp4 ? "Encode AVC MP4 via MediaBunny" : "MP4 encoding unavailable in this browser"}>Record MP4</button>
+        <button className="primary" disabled={!canExport} onClick={()=>download("mise-en-scene.html",standaloneHtml(scene,theme),"text/html")}>Export HTML</button>
       </div></header>
     <section className="workspace">
       <aside className="panel source-panel"><div className="panel-head"><h2>Source</h2><div className="panel-head-actions"><button className="small" onClick={()=>void openFolder()}>Open folder</button><button className="small" onClick={()=>void openRepoUrl()}>From URL</button><button className="small" onClick={()=>regenerate(sampleSource)}>Sample</button></div></div>
@@ -183,8 +207,8 @@ export default function App() {
         <p className="source-meta">{document.source.kind === "openapi" ? "OpenAPI JSON" : "Plain text"} · {document.blocks.length} elements · {document.edges.length} relationships</p>
         {document.warnings.map((warning)=><p className="warning" key={warning}>{warning}</p>)}
       </aside>
-      <section className="artifact-workbench"><div className="view-controls" aria-label="Scene view"><button className={document.view==="architecture"?"active":""} onClick={()=>setView("architecture")}>Architecture</button><button className={document.view==="sequence"?"active":""} onClick={()=>setView("sequence")}>Sequence</button><button className={review?"active":""} aria-pressed={review} onClick={()=>setReview((v)=>!v)}>Review evidence</button></div>
-        <section className="stage-panel"><div className="stage"><SceneSvg scene={scene} selectedId={selection?.id} review={review} onSelect={select}/></div></section>
+      <section className="artifact-workbench"><div className="view-controls" aria-label="Scene view"><button className={document.view==="architecture"?"active":""} onClick={()=>setView("architecture")}>Architecture</button><button className={document.view==="sequence"?"active":""} onClick={()=>setView("sequence")}>Sequence</button><button className={review?"active":""} aria-pressed={review} onClick={()=>setReview((v)=>!v)}>Review evidence</button><label>Scene theme<select aria-label="Scene theme" value={theme} onChange={(e)=>chooseTheme(e.target.value as SceneThemeId)}><option value="ledger">Ledger</option><option value="paper">Paper</option></select></label></div>
+        <section className="stage-panel"><div className="stage"><SceneSvg scene={scene} selectedId={selection?.id} review={review} theme={theme} onSelect={select}/></div></section>
         <section className="detail-rail"><div className="rail-card inspector"><h2>Selected element</h2>{selected ? <><label>Label<input value={selected.label} onChange={(e)=>updateSelected("label",e.target.value)}/></label>{selection?.type==="block"&&<label>Detail<textarea value={"detail" in selected?selected.detail:""} onChange={(e)=>updateSelected("detail",e.target.value)}/></label>}{review&&<><label>Confidence<select value={selected.confidence ?? ""} onChange={(e)=>updateAnalytic("confidence", (e.target.value || undefined) as Confidence | undefined)}><option value="">Unset</option>{CONFIDENCE_LEVELS.map((level)=><option key={level} value={level}>{level}</option>)}</select></label><label className="checkbox"><input type="checkbox" checked={!!selected.competingHypothesis} onChange={(e)=>updateAnalytic("competingHypothesis", e.target.checked || undefined)}/> Competing hypothesis</label></>}</>:<p>Select a block or relationship.</p>}</div>
           <div className="rail-card"><h2>Evidence</h2>{selectedFacts.length?<ol>{selectedFacts.map((fact)=><li key={fact.id}><button className="evidence" disabled={fact.start<0} onClick={()=>chooseFact(fact.start,fact.end)}>{fact.text}</button></li>)}</ol>:<p>No direct source evidence attached.</p>}</div>
           <div className="rail-card terms-card"><h2>Terms</h2><div className="term-list">{document.terms.map((term)=><span key={term} title={term}>{term}</span>)}</div></div>
