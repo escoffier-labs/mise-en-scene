@@ -81,6 +81,24 @@ backend:
 - **From URL** fetches a public GitHub repository's docs and specs directly from
   the browser (two API calls plus raw file reads), then extracts the same way.
 
+### Crawl limits and GitHub rate limits
+
+Repository crawling is intentionally bounded so the browser stays responsive:
+
+- **Open folder** reads at most 200 crawlable text files (Markdown, plain text,
+  and spec-shaped YAML/JSON) per pick. When the cap is hit, the studio shows a
+  truncation warning in the source panel and carries it into JSON and HTML
+  exports.
+- **From URL** considers at most 80 remote candidate paths before fetching raw
+  file contents. Large repositories may omit docs beyond that cap; the same
+  truncation warning appears in the studio and exports.
+
+**From URL** uses the unauthenticated GitHub REST API (about 60 requests per hour
+per IP). If you see a rate-limit error, wait and retry, clone the repository and
+use **Open folder**, or paste the source directly. Authenticated GitHub API
+access raises the limit substantially; a future studio release may accept an
+optional personal access token for repeated URL imports.
+
 ## Exports
 
 JSON exports use a validated, versioned schema and can be imported for another

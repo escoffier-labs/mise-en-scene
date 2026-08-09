@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { CRAWL_MAX_BYTES, isCrawlableFile, isRemoteCandidate, parseRepoUrl, REMOTE_CANDIDATE_LIMIT, selectRemoteCandidatePaths, synthesizeSource } from "./crawl.ts";
+import { CRAWL_MAX_BYTES, CRAWL_FILE_CAP_WARNING, isCrawlableFile, isRemoteCandidate, parseRepoUrl, REMOTE_CANDIDATE_CAP_WARNING, REMOTE_CANDIDATE_LIMIT, selectRemoteCandidatePaths, synthesizeSource } from "./crawl.ts";
 import { extractScene } from "./extract.ts";
 
 test("an OpenAPI spec wins over documentation", () => {
@@ -91,6 +91,11 @@ test("crawl filters skip vendored and lockfiles; remote narrows data files", () 
   assert.equal(isRemoteCandidate("README.md"), true);
 });
 
+test("crawl file cap warning names the limit and incomplete scan", () => {
+  assert.match(CRAWL_FILE_CAP_WARNING, /200-file limit/i);
+  assert.match(CRAWL_FILE_CAP_WARNING, /additional docs/i);
+});
+
 test("remote candidate selection filters before the 80-item cap", () => {
   const tree: Array<{ type: string; path?: string; size?: number }> = [
     { type: "blob", path: "node_modules/pkg/readme.md", size: 128 },
@@ -107,8 +112,21 @@ test("remote candidate selection filters before the 80-item cap", () => {
   }
 
   const paths = selectRemoteCandidatePaths(tree);
-  assert.equal(paths.length, REMOTE_CANDIDATE_LIMIT);
-  assert.ok(paths.every((path) => isRemoteCandidate(path)));
-  assert.ok(paths.every((path) => path.startsWith("docs/file-")));
-  assert.ok(paths.includes(`docs/file-${String(REMOTE_CANDIDATE_LIMIT - 1).padStart(3, "0")}.md`));
+  assert.equal(paths.paths.length, REMOTE_CANDIDATE_LIMIT);
+  assert.equal(paths.truncated, true);
+  assert.equal(paths.eligible, REMOTE_CANDIDATE_LIMIT + 5);
+  assert.ok(paths.paths.every((path) => isRemoteCandidate(path)));
+  assert.ok(paths.paths.every((path) => path.startsWith("docs/file-")));
+  assert.ok(paths.paths.includes(`docs/file-${String(REMOTE_CANDIDATE_LIMIT - 1).padStart(3, "0")}.md`));
+});
+
+test("remote candidate cap warning is explicit when selection truncates", () => {
+  const tree: Array<{ type: string; path?: string; size?: number }> = [];
+  for (let index = 0; index < REMOTE_CANDIDATE_LIMIT + 1; index++) {
+    tree.push({ type: "blob", path: `docs/file-${String(index).padStart(3, "0")}.md`, size: 128 });
+  }
+  const selection = selectRemoteCandidatePaths(tree);
+  assert.equal(selection.truncated, true);
+  assert.match(REMOTE_CANDIDATE_CAP_WARNING, /limited to 80/i);
+  assert.match(REMOTE_CANDIDATE_CAP_WARNING, /additional docs/i);
 });
