@@ -24,4 +24,4 @@
 - [x] Require an incident signal and at least two recognized headings before returning a result. Otherwise return `null` without mutating generic extraction.
 - [x] Run the focused test through Brigade and require green.
 - [x] Run full `./scripts/verify` through Brigade if dependencies exist. They are absent in this fresh clone and may not be installed, so record that limitation and require green PR CI.
-- [ ] Commit code, tests, and checked plan boxes with `feat: extract structured incident reports`.
+- [x] Commit code, tests, and checked plan boxes with `feat: extract structured incident reports`.

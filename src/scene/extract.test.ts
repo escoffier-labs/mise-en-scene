@@ -226,3 +226,46 @@ test("incident extraction respects scene fact caps", () => {
   assert.ok(result.document.edges.length <= SCENE_LIMITS.edges);
   assert.equal(validateSceneDocument(result.document).ok, true);
 });
+
+test("unrecognized intervening headings do not leak into prior incident sections", () => {
+  const source = `# Checkout outage incident
+
+## Timeline
+- 10:00 alerts fired
+- 10:15 bad deploy identified
+
+## Root cause
+- Config push skipped canary
+- Feature flag left enabled overnight
+
+## Impact
+Checkout unavailable for forty minutes across US-EAST.
+`;
+  const result = extractScene(source, "engineer");
+  assert.equal(result.fallback, false);
+  assert.deepEqual(result.document.blocks.map((b) => b.label), ["Timeline", "Impact"]);
+  assert.equal(result.document.edges.length, 1);
+  assert.equal(result.document.edges[0].label, "informs");
+  assert.equal(result.document.edges[0].from, result.document.blocks[0].id);
+  assert.equal(result.document.edges[0].to, result.document.blocks[1].id);
+
+  const timeline = result.document.blocks.find((b) => b.label === "Timeline")!;
+  const timelineTexts = timeline.factIds.map((id) => result.document.facts.find((f) => f.id === id)!.text);
+  assert.deepEqual(timelineTexts, ["10:00 alerts fired", "10:15 bad deploy identified"]);
+
+  const rootCauseBullets = ["Config push skipped canary", "Feature flag left enabled overnight"];
+  for (const text of rootCauseBullets) {
+    assert.equal(result.document.facts.some((f) => f.text === text), false);
+    for (const block of result.document.blocks) {
+      assert.equal(
+        block.factIds.some((id) => result.document.facts.find((f) => f.id === id)?.text === text),
+        false,
+      );
+    }
+  }
+
+  for (const fact of result.document.facts) {
+    assert.equal(source.slice(fact.start, fact.end), fact.text);
+  }
+  assert.equal(validateSceneDocument(result.document).ok, true);
+});

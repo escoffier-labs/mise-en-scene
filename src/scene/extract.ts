@@ -46,22 +46,25 @@ function canonicalizeIncidentHeading(label: string): IncidentSection | null {
 function extractIncident(source: string, audience: Audience): ExtractionResult | null {
   if (!INCIDENT_SIGNAL.test(source)) return null;
   const headingRe = /^(#{1,6})\s+(.+?)\s*$/gm;
-  const matches: { section: IncidentSection; index: number; fullLength: number }[] = [];
+  const headings: { section: IncidentSection | null; index: number; fullLength: number }[] = [];
   for (const match of source.matchAll(headingRe)) {
-    const section = canonicalizeIncidentHeading(match[2]);
-    if (!section) continue;
-    matches.push({ section, index: match.index!, fullLength: match[0].length });
+    headings.push({
+      section: canonicalizeIncidentHeading(match[2]),
+      index: match.index!,
+      fullLength: match[0].length,
+    });
   }
-  if (matches.length < 2) return null;
   const seen = new Set<IncidentSection>();
   const bySection = new Map<IncidentSection, { bodyStart: number; bodyEnd: number }>();
-  for (let i = 0; i < matches.length; i++) {
-    const match = matches[i];
-    if (seen.has(match.section)) continue;
-    seen.add(match.section);
-    bySection.set(match.section, {
-      bodyStart: match.index + match.fullLength,
-      bodyEnd: i + 1 < matches.length ? matches[i + 1].index : source.length,
+  for (let i = 0; i < headings.length; i++) {
+    const heading = headings[i];
+    if (!heading.section || seen.has(heading.section)) continue;
+    seen.add(heading.section);
+    bySection.set(heading.section, {
+      bodyStart: heading.index + heading.fullLength,
+      // Stop at the next Markdown heading of any name so unrecognized
+      // sections (e.g. Root cause) cannot leak into a prior canonical body.
+      bodyEnd: i + 1 < headings.length ? headings[i + 1].index : source.length,
     });
   }
   if (bySection.size < 2) return null;
