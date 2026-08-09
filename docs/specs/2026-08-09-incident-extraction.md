@@ -26,4 +26,3 @@ OpenAPI, arrow grammar, generic Markdown, and fallback behavior remain byte-for-
 - Reports with two recognized sections produce only those sections and one edge.
 - A generic document with an Impact heading but no incident signal stays on the existing path.
 - Existing extraction tests stay green.
-
