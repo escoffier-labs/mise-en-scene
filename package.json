@@ -13,6 +13,7 @@
     "preview": "vite preview --host 0.0.0.0 --port 5216"
   },
   "dependencies": {
+    "mediabunny": "^1.53.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
