@@ -3,7 +3,8 @@ import { SceneSvg } from "./components/SceneSvg";
 import { extractScene } from "./scene/extract";
 import { standaloneHtml, standaloneSvg, standaloneWalkthrough } from "./scene/exports";
 import { layoutScene } from "./scene/layout";
-import { preparePngRasterExport, prepareVideoRasterExport } from "./scene/foreignObjectRaster";
+import { preparePdfRasterExport, preparePngRasterExport, prepareVideoRasterExport } from "./scene/foreignObjectRaster";
+import { pdfFromJpeg } from "./scene/pdf";
 import { provenanceNarrative } from "./scene/provenance";
 import { PNG_SCALE, SCENE_HEIGHT, SCENE_WIDTH, sizedSvg, svgToDataUrl } from "./scene/raster";
 import { stepSpotlight, stepViewport, walkthroughSteps, type Viewport } from "./scene/walkthrough";
@@ -107,17 +108,31 @@ export default function App() {
     try { saveBlob(filename, new Blob([content],{type})); setNotice(`${filename} exported`); }
     catch (error) { setNotice(`Export failed: ${error instanceof Error ? error.message : "unknown error"}`); }
   }
+  async function rasterizeSceneCanvas() {
+    const img=await loadImage(svgToDataUrl(sizedSvg(standaloneSvg(scene,review))));
+    const canvas=globalThis.document.createElement("canvas"); canvas.width=SCENE_WIDTH*PNG_SCALE; canvas.height=SCENE_HEIGHT*PNG_SCALE;
+    const ctx=canvas.getContext("2d"); if (!ctx) throw new Error("canvas is unavailable");
+    ctx.scale(PNG_SCALE,PNG_SCALE); ctx.drawImage(img,0,0,SCENE_WIDTH,SCENE_HEIGHT);
+    return canvas;
+  }
   async function exportPng() {
     const gate = await preparePngRasterExport();
     if (!gate.ok) { setNotice(gate.notice); return; }
     try {
-      const img=await loadImage(svgToDataUrl(sizedSvg(standaloneSvg(scene,review))));
-      const canvas=globalThis.document.createElement("canvas"); canvas.width=SCENE_WIDTH*PNG_SCALE; canvas.height=SCENE_HEIGHT*PNG_SCALE;
-      const ctx=canvas.getContext("2d"); if (!ctx) throw new Error("canvas is unavailable");
-      ctx.scale(PNG_SCALE,PNG_SCALE); ctx.drawImage(img,0,0,SCENE_WIDTH,SCENE_HEIGHT);
+      const canvas=await rasterizeSceneCanvas();
       const blob=await new Promise<Blob|null>((resolve)=>canvas.toBlob(resolve,"image/png")); if (!blob) throw new Error("PNG encoding failed");
       saveBlob("mise-en-scene.png",blob); setNotice("mise-en-scene.png exported");
     } catch (error) { setNotice(`PNG export failed: ${error instanceof Error ? error.message : "unknown error"}`); }
+  }
+  async function exportPdf() {
+    const gate = await preparePdfRasterExport();
+    if (!gate.ok) { setNotice(gate.notice); return; }
+    try {
+      const canvas=await rasterizeSceneCanvas();
+      const jpeg=await new Promise<Blob|null>((resolve)=>canvas.toBlob(resolve,"image/jpeg",0.92)); if (!jpeg) throw new Error("JPEG encoding failed");
+      const bytes=pdfFromJpeg(new Uint8Array(await jpeg.arrayBuffer()), canvas.width, canvas.height);
+      saveBlob("mise-en-scene.pdf", new Blob([bytes],{type:"application/pdf"})); setNotice("mise-en-scene.pdf exported");
+    } catch (error) { setNotice(`PDF export failed: ${error instanceof Error ? error.message : "unknown error"}`); }
   }
   async function recordWalkthrough() {
     const Recorder=(globalThis as any).MediaRecorder;
@@ -166,6 +181,7 @@ export default function App() {
         <label className="file-button">Import JSON<input type="file" accept="application/json,.json" onChange={(e)=>void importFile(e.target.files?.[0])}/></label>
         <button disabled={!canExport} onClick={()=>download("mise-en-scene.svg",standaloneSvg(scene,review),"image/svg+xml")}>Export SVG</button>
         <button disabled={!canExport} onClick={()=>void exportPng()}>Export PNG</button>
+        <button disabled={!canExport} onClick={()=>void exportPdf()}>Export PDF</button>
         <button disabled={!canExport} onClick={()=>download("mise-en-scene.json",JSON.stringify(scene,null,2),"application/json")}>Export JSON</button>
         <button disabled={!canExport} onClick={()=>download("mise-en-scene-provenance.txt",provenanceNarrative(scene),"text/plain")}>Export provenance</button>
         <button disabled={!canExport} onClick={()=>download("mise-en-scene-walkthrough.html",standaloneWalkthrough(scene),"text/html")}>Walkthrough</button>
