@@ -64,10 +64,10 @@ export function getSceneTheme(theme: SceneThemeId = DEFAULT_SCENE_THEME): SceneP
 - Modify: `src/scene/exports.tsx`
 - Modify: `src/scene/exports.test.ts`
 
-- [ ] Extend the export harness payload with `theme`, forward it to direct `SceneSvg` markup and each standalone helper, then add failing assertions that `paper` export output contains `#f4f1e8` and `#9b4d24`, omits `#0d1014`, and equals direct `SceneSvg` output for standalone SVG. Cover HTML architecture and sequence markup plus walkthrough scene markup.
-- [ ] Run `brigade work verify run --target . --command "npm test -- src/scene/exports.test.ts"`. Expect themed assertions to fail because the helpers ignore the new value, or record the dependency limitation.
-- [ ] Add `theme?: SceneThemeId` to `SceneSvg` props. In `SceneSvg`, resolve `const palette = getSceneTheme(theme)` and emit `sceneCssFor(theme)`, `palette.accent`, and `palette.bg` instead of the default constants.
-- [ ] Use these compatible trailing parameters in `src/scene/exports.tsx`:
+- [x] Extend the export harness payload with `theme`, forward it to direct `SceneSvg` markup and each standalone helper, then add failing assertions that `paper` export output contains `#f4f1e8` and `#9b4d24`, omits `#0d1014`, and equals direct `SceneSvg` output for standalone SVG. Cover HTML architecture and sequence markup plus walkthrough scene markup.
+- [x] Run `brigade work verify run --target . --command "npm test -- src/scene/exports.test.ts"`. Expect themed assertions to fail because the helpers ignore the new value, or record the dependency limitation.
+- [x] Add `theme?: SceneThemeId` to `SceneSvg` props. In `SceneSvg`, resolve `const palette = getSceneTheme(theme)` and emit `sceneCssFor(theme)`, `palette.accent`, and `palette.bg` instead of the default constants.
+- [x] Use these compatible trailing parameters in `src/scene/exports.tsx`:
 
 ```ts
 standaloneHtml(scene: SceneDocument, theme: SceneThemeId = DEFAULT_SCENE_THEME)
@@ -75,9 +75,9 @@ standaloneSvg(scene: SceneDocument, review = false, spotlight: Spotlight | null 
 standaloneWalkthrough(scene: SceneDocument, theme: SceneThemeId = DEFAULT_SCENE_THEME)
 ```
 
-- [ ] Pass `theme` to every `SceneSvg` constructed by those helpers.
-- [ ] Re-run the focused export test through Brigade. Expect all export tests to pass, or record the dependency limitation.
-- [ ] Commit: `git add src/components/SceneSvg.tsx src/scene/exports.tsx src/scene/exports.test.ts && git commit -m "feat: carry themes through scene exports"`.
+- [x] Pass `theme` to every `SceneSvg` constructed by those helpers.
+- [x] Re-run the focused export test through Brigade. Expect all export tests to pass, or record the dependency limitation.
+- [x] Commit: `git add src/components/SceneSvg.tsx src/scene/exports.tsx src/scene/exports.test.ts && git commit -m "feat: carry themes through scene exports"`.
 
 ### Task 3: Add the persisted studio selector
 
