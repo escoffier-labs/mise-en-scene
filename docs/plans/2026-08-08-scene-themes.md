@@ -89,4 +89,3 @@ standaloneWalkthrough(scene: SceneDocument, theme: SceneThemeId = DEFAULT_SCENE_
 - [x] Pass `theme` to the live `SceneSvg`, `standaloneHtml`, `standaloneSvg`, and `standaloneWalkthrough` calls. Pass it as the fifth argument to every SVG used for PNG and recorded walkthrough frames. Use `getSceneTheme(theme).bg` for the video canvas fill.
 - [x] Run full verification through Brigade: `brigade work verify run --target . --command "./scripts/verify"`. Expect tests and build to pass. If dependencies are unavailable locally, push the branch and require green pull-request CI before review or merge.
 - [x] Commit: `git add src/App.tsx docs/plans/2026-08-08-scene-themes.md && git commit -m "feat: add scene theme selector"`.
-

@@ -24,4 +24,3 @@ Themes are named literal color records in `src/sceneStyles.ts`. `ledger` preserv
 - Tests prove all standalone helpers forward the requested theme.
 - The full repository verification remains `./scripts/verify`.
 - No package or runtime dependency changes are allowed.
-
