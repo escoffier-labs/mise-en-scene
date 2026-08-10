@@ -34,3 +34,17 @@ test("App shares URL-encoded scene state and guards localStorage access", () => 
   assert.match(main, /\bisEmbedMode\b/);
   assert.match(main, /\bEmbedView\b/);
 });
+
+test("App uses the default theme when a shared scene omits its optional theme", () => {
+  const app = readFileSync(fileURLToPath(new URL("./App.tsx", import.meta.url)), "utf8");
+  const shareImport = app.match(/\/\/ Prefer compressed hash state[\s\S]*?\n\s*function regenerate/)?.[0];
+  assert.ok(shareImport, "share import effect must be present");
+  assert.match(shareImport, /setTheme\(result\.value\.theme\s*\?\?\s*DEFAULT_SCENE_THEME\)/);
+});
+
+test("App keeps shared scene and theme state out of persisted storage", () => {
+  const app = readFileSync(fileURLToPath(new URL("./App.tsx", import.meta.url)), "utf8");
+  const shareImport = app.match(/\/\/ Prefer compressed hash state[\s\S]*?\n\s*function regenerate/)?.[0];
+  assert.ok(shareImport, "share import effect must be present");
+  assert.doesNotMatch(shareImport, /writeStorage\s*\(/);
+});

@@ -109,11 +109,7 @@ export default function App() {
       setSource(next.source.text);
       setSelection({ type: "block", id: next.blocks[0]?.id });
       setDirty(false);
-      if (result.value.theme) {
-        setTheme(result.value.theme);
-        writeStorage("mise-theme", result.value.theme);
-      }
-      writeStorage("mise-source", next.source.text);
+      setTheme(result.value.theme ?? DEFAULT_SCENE_THEME);
       setNotice("Loaded shared scene");
     });
     return () => { cancelled = true; };

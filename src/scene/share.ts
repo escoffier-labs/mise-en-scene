@@ -7,7 +7,7 @@
 // raw byte values instead so every 0..255 maps 1:1 into a binary string.
 
 import { DEFAULT_SCENE_THEME, isSceneThemeId, type SceneThemeId } from "../sceneStyles.ts";
-import type { SceneDocument } from "./types.ts";
+import { SCENE_LIMITS, type SceneDocument } from "./types.ts";
 import { validateSceneDocument } from "./validate.ts";
 
 export const SHARE_HASH_KEY = "s";
@@ -24,6 +24,9 @@ export type ShareDecodeResult =
   | { ok: false; error: string };
 
 const B64URL_RE = /^[A-Za-z0-9_-]+$/;
+// JSON escaping can use six bytes for each allowed source UTF-16 code unit.
+// One additional source-sized budget covers the envelope and scene metadata.
+const SHARE_DECOMPRESSED_MAX_BYTES = SCENE_LIMITS.source * 7;
 
 /** Convert raw bytes to a URL-safe base64 string without padding. */
 export function bytesToBase64Url(bytes: Uint8Array): string {
@@ -58,8 +61,27 @@ async function gunzipBytes(input: Uint8Array): Promise<Uint8Array> {
   const stream = new DecompressionStream("gzip");
   const buffer = new ArrayBuffer(input.byteLength);
   new Uint8Array(buffer).set(input);
-  const ab = await new Response(new Blob([buffer]).stream().pipeThrough(stream)).arrayBuffer();
-  return new Uint8Array(ab);
+  const reader = new Blob([buffer]).stream().pipeThrough(stream).getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (size + value.byteLength > SHARE_DECOMPRESSED_MAX_BYTES) {
+      try { await reader.cancel(); } finally {
+        throw new Error("share payload exceeds the decompressed size limit");
+      }
+    }
+    chunks.push(value);
+    size += value.byteLength;
+  }
+  const output = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    output.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return output;
 }
 
 export function buildShareEnvelope(document: SceneDocument, theme?: SceneThemeId): ShareEnvelope {

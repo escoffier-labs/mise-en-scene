@@ -14,6 +14,7 @@ import {
   readShareTokenFromHash,
   SHARE_ENVELOPE_VERSION,
 } from "./share.ts";
+import { SCENE_LIMITS } from "./types.ts";
 
 const sample = extractScene("Browser -> API: sends request\nAPI -> Database: reads rows", "engineer").document;
 
@@ -84,6 +85,27 @@ test("decodeShareEnvelope rejects corrupt, invalid, and unsupported payloads", a
     ).arrayBuffer().then((ab) => new Uint8Array(ab)),
   );
   assert.equal((await decodeShareEnvelope(badDoc)).ok, false);
+});
+
+test("decodeShareEnvelope rejects highly compressed output before scene validation", async () => {
+  const oversizedJson = JSON.stringify({
+    v: SHARE_ENVELOPE_VERSION,
+    document: {
+      ...sample,
+      source: { ...sample.source, text: "x".repeat(SCENE_LIMITS.source * 7) },
+    },
+  });
+  const compressed = new Uint8Array(await new Response(
+    new Blob([new TextEncoder().encode(oversizedJson)])
+      .stream()
+      .pipeThrough(new CompressionStream("gzip")),
+  ).arrayBuffer());
+  assert.ok(compressed.byteLength < oversizedJson.length / 100, "fixture must be highly compressed");
+
+  assert.deepEqual(
+    await decodeShareEnvelope(bytesToBase64Url(compressed)),
+    { ok: false, error: "share payload exceeds the decompressed size limit" },
+  );
 });
 
 test("hash and URL helpers parse embed mode and share tokens", () => {
