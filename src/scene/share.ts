@@ -228,13 +228,13 @@ export function bindShareHash(options: BindShareHashOptions): { refresh: () => v
 
   const refresh = () => {
     if (disposed) return;
+    const current = ++generation;
     const token = readShareTokenFromHash(options.getHash());
     if (token === null) {
       options.onChange({ status: "idle" });
       return;
     }
 
-    const current = ++generation;
     options.onChange({ status: "loading" });
     void decode(token).then((result) => {
       if (disposed || current !== generation) return;

@@ -251,6 +251,42 @@ test("bindShareHash replaces tokens, ignores stale async results, and surfaces e
   assert.equal(listeners.size, 0);
 });
 
+test("bindShareHash invalidates a pending decode when the fragment loses its share token", async () => {
+  let hash = "#s=slow";
+  const listeners = new Set<() => void>();
+  const events: string[] = [];
+  let resolveSlow: ((value: Awaited<ReturnType<typeof decodeShareEnvelope>>) => void) | undefined;
+
+  const binding = bindShareHash({
+    getHash: () => hash,
+    decode: () =>
+      new Promise<Awaited<ReturnType<typeof decodeShareEnvelope>>>((resolve) => {
+        resolveSlow = resolve;
+      }),
+    onChange: (state) => {
+      events.push(state.status);
+    },
+    addEventListener: (_type, handler) => {
+      listeners.add(handler);
+    },
+    removeEventListener: (_type, handler) => {
+      listeners.delete(handler);
+    },
+  });
+
+  assert.deepEqual(events, ["loading"]);
+  hash = "#view=architecture";
+  for (const handler of listeners) handler();
+  assert.deepEqual(events, ["loading", "idle"]);
+
+  resolveSlow?.({ ok: true, value: { document: sampleDocument("Stale"), theme: "ledger" } });
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.deepEqual(events, ["loading", "idle"]);
+
+  binding.dispose();
+});
+
 function SCENE_SOURCE_OVER_BUDGET(): number {
   return 50_000;
 }
