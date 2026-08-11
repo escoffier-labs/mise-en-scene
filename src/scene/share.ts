@@ -26,7 +26,9 @@ export type ShareDecodeResult =
 const B64URL_RE = /^[A-Za-z0-9_-]+$/;
 // JSON escaping can use six bytes for each allowed source UTF-16 code unit.
 // One additional source-sized budget covers the envelope and scene metadata.
-const SHARE_DECOMPRESSED_MAX_BYTES = SCENE_LIMITS.source * 7;
+export const SHARE_DECOMPRESSED_MAX_BYTES = SCENE_LIMITS.source * 7;
+// Base64 expands 3 bytes into 4 characters; ceil keeps the encoded ceiling exact.
+export const SHARE_ENCODED_MAX_CHARS = Math.ceil(SHARE_DECOMPRESSED_MAX_BYTES * 4 / 3);
 
 /** Convert raw bytes to a URL-safe base64 string without padding. */
 export function bytesToBase64Url(bytes: Uint8Array): string {
@@ -68,9 +70,12 @@ async function gunzipBytes(input: Uint8Array): Promise<Uint8Array> {
     const { done, value } = await reader.read();
     if (done) break;
     if (size + value.byteLength > SHARE_DECOMPRESSED_MAX_BYTES) {
-      try { await reader.cancel(); } finally {
-        throw new Error("share payload exceeds the decompressed size limit");
+      try {
+        await reader.cancel();
+      } catch {
+        // Ignore cancel failures; the size limit is the classified error.
       }
+      throw new Error("share payload exceeds the decompressed size limit");
     }
     chunks.push(value);
     size += value.byteLength;
@@ -90,19 +95,31 @@ export function buildShareEnvelope(document: SceneDocument, theme?: SceneThemeId
   return envelope;
 }
 
-/** Gzip + base64url encode a share envelope. Throws only on unexpected runtime failures. */
+/** Gzip + base64url encode a share envelope. Throws on invalid documents or size limits. */
 export async function encodeShareEnvelope(envelope: ShareEnvelope): Promise<string> {
-  const json = JSON.stringify(envelope);
-  const compressed = await gzipBytes(new TextEncoder().encode(json));
-  return bytesToBase64Url(compressed);
+  const validated = validateSceneDocument(envelope.document);
+  if (!validated.ok) throw new Error(validated.error);
+  const json = JSON.stringify({ ...envelope, document: validated.value });
+  const raw = new TextEncoder().encode(json);
+  if (raw.byteLength > SHARE_DECOMPRESSED_MAX_BYTES) {
+    throw new Error("share payload exceeds the decompressed size limit");
+  }
+  const token = bytesToBase64Url(await gzipBytes(raw));
+  if (token.length > SHARE_ENCODED_MAX_CHARS) {
+    throw new Error("share token exceeds the encoded size limit");
+  }
+  return token;
 }
 
 export async function decodeShareEnvelope(encoded: string): Promise<ShareDecodeResult> {
   try {
+    if (encoded.length > SHARE_ENCODED_MAX_CHARS) {
+      return { ok: false, error: "share token exceeds the encoded size limit" };
+    }
     if (!encoded || !B64URL_RE.test(encoded)) return { ok: false, error: "share payload is not valid base64url" };
     const compressed = base64UrlToBytes(encoded);
     const raw = await gunzipBytes(compressed);
-    const parsed: unknown = JSON.parse(new TextDecoder().decode(raw));
+    const parsed: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(raw));
     if (!parsed || typeof parsed !== "object") return { ok: false, error: "share payload must be an object" };
     const body = parsed as Record<string, unknown>;
     if (body.v !== SHARE_ENVELOPE_VERSION) return { ok: false, error: "share payload version is unsupported" };
