@@ -15,6 +15,7 @@ import { fetchRepoFiles } from "./scene/github";
 import { DEFAULT_SCENE_THEME, getSceneTheme, isSceneThemeId, type SceneThemeId } from "./sceneStyles";
 import { CONFIDENCE_LEVELS, editBlock, editEdge, SCENE_LIMITS, type Audience, type Confidence, type SceneDocument, type SceneView } from "./scene/types";
 import { validateSceneDocument } from "./scene/validate";
+import { bindShareHash, buildEmbedUrl, buildShareUrl, encodeShareEnvelope, readShareTokenFromHash } from "./scene/share";
 import { encodeWalkthroughVideo, isVideoExportSupported, probeWalkthroughEncodeCapabilities } from "./walkthroughRecorder";
 
 const sampleSource = `# Checkout system
@@ -71,6 +72,31 @@ export default function App() {
         if (!cancelled) setEncodeCaps({ mediabunnyVp9Webm: false, mediabunnyAvcMp4: false, mediaRecorderWebm: false });
       });
     return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    // Shared links hydrate in-memory only. Do not write mise-source or mise-theme.
+    const binding = bindShareHash({
+      getHash: () => window.location.hash,
+      onChange: (state) => {
+        if (state.status === "ready") {
+          setDocument(state.document);
+          setSource(state.document.source.text);
+          setSelection({ type: "block", id: state.document.blocks[0]?.id });
+          setTheme(state.theme);
+          setDirty(false);
+          setNotice("Loaded shared scene");
+          return;
+        }
+        if (state.status === "error") setNotice(state.error);
+        else if (state.status === "loading" && readShareTokenFromHash(window.location.hash) !== null) {
+          setNotice("Loading shared scene...");
+        }
+      },
+      addEventListener: (_type, handler) => window.addEventListener("hashchange", handler),
+      removeEventListener: (_type, handler) => window.removeEventListener("hashchange", handler),
+    });
+    return () => binding.dispose();
   }, []);
 
   function regenerate(next: string, audience = document.audience, extraWarnings: string[] = []) {
@@ -200,12 +226,26 @@ export default function App() {
     try { const parsed=JSON.parse(await file.text()); const result=validateSceneDocument(parsed); if (!result.ok) { setNotice(`Import failed: ${result.error}`); return; } setDocument(result.value); setSource(result.value.source.text); setSelection({type:"block",id:result.value.blocks[0]?.id}); setDirty(false); setNotice(`${file.name} imported`); }
     catch { setNotice("Import failed: file is not valid JSON"); }
   }
+  async function copyLink(kind: "share" | "embed") {
+    try {
+      const token = await encodeShareEnvelope({ document, theme });
+      const url = kind === "embed"
+        ? buildEmbedUrl(window.location.href, token)
+        : buildShareUrl(window.location.href, token);
+      await navigator.clipboard.writeText(url);
+      setNotice(kind === "embed" ? "Embed link copied" : "Share link copied");
+    } catch (error) {
+      setNotice(`Share failed: ${error instanceof Error ? error.message : "unknown error"}`);
+    }
+  }
 
   const canExport = source.trim().length > 0;
   return <main className="app-shell">
     <header className="topbar"><div><p className="eyebrow">Escoffier Labs &middot; the studio</p><h1 className="wordmark">mise-en-scene<span className="wordmark-cursor">_</span></h1></div>
       <div className="actions" aria-label="Artifact actions"><span className="export-status" role="status" aria-live="polite">{notice}</span>
         <label className="file-button">Import JSON<input type="file" accept="application/json,.json" onChange={(e)=>void importFile(e.target.files?.[0])}/></label>
+        <button disabled={!canExport} onClick={()=>void copyLink("share")}>Copy share link</button>
+        <button disabled={!canExport} onClick={()=>void copyLink("embed")}>Copy embed link</button>
         <button disabled={!canExport} onClick={()=>download("mise-en-scene.svg",standaloneSvg(scene,review,null,undefined,theme),"image/svg+xml")}>Export SVG</button>
         <button disabled={!canExport} onClick={()=>void exportPng()}>Export PNG</button>
         <button disabled={!canExport} onClick={()=>void exportPdf()}>Export PDF</button>

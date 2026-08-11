@@ -12,13 +12,20 @@ import {
 
 const appSource = readFileSync(fileURLToPath(new URL("./App.tsx", import.meta.url)), "utf8");
 
+async function waitFor(predicate: () => boolean, label: string) {
+  const start = Date.now();
+  while (!predicate()) {
+    if (Date.now() - start > 2000) throw new Error(`timed out waiting for ${label}`);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+}
+
 test("App wires share hash hydration without persisting imported scene or theme", () => {
   assert.match(appSource, /\bbindShareHash\b/);
   assert.match(appSource, /\bhashchange\b/);
-  assert.match(appSource, /readShareTokenFromHash|bindShareHash/);
-  assert.match(appSource, /Copy share link|Share link|Copy embed link|Embed link/);
-  assert.match(appSource, /token === null|readShareTokenFromHash/);
-  // Imported share state must stay in memory: no localStorage writes of mise-source/mise-theme inside the share path.
+  assert.match(appSource, /Copy share link/);
+  assert.match(appSource, /Copy embed link/);
+  assert.match(appSource, /readShareTokenFromHash/);
   assert.doesNotMatch(appSource, /decodeShareEnvelope[\s\S]{0,400}localStorage\.setItem\(["']mise-(source|theme)["']/);
 });
 
@@ -57,7 +64,6 @@ test("Studio share hashchange replaces tokens, ignores stale results, errors on 
       void decodeShareEnvelope(token).then(resolve);
     });
 
-  // Mirrors Studio behavior: apply share into memory only; never write localStorage.
   const binding = bindShareHash({
     getHash: () => hash,
     decode,
@@ -80,8 +86,7 @@ test("Studio share hashchange replaces tokens, ignores stale results, errors on 
   binding.refresh();
   hash = `#s=${second}`;
   for (const handler of listeners) handler();
-  await Promise.resolve();
-  await Promise.resolve();
+  await waitFor(() => applied.some((item) => item.title === "Second shared"), "second shared title");
 
   assert.deepEqual(applied.map((item) => item.title), ["Second shared"]);
 
@@ -92,22 +97,17 @@ test("Studio share hashchange replaces tokens, ignores stale results, errors on 
       theme: "paper",
     },
   });
-  await Promise.resolve();
-  await Promise.resolve();
+  await new Promise((resolve) => setTimeout(resolve, 0));
   assert.deepEqual(applied.map((item) => item.title), ["Second shared"]);
 
   hash = "#s=";
   for (const handler of listeners) handler();
-  await Promise.resolve();
-  await Promise.resolve();
-  assert.ok(errors.some((error) => /invalid shared scene/i.test(error)));
+  await waitFor(() => errors.some((error) => /invalid shared scene/i.test(error)), "empty share error");
 
   assert.equal(localStorage.getItem("mise-source"), "Local saved source");
   assert.equal(localStorage.getItem("mise-theme"), "paper");
   assert.equal(store.get("mise-source"), "Local saved source");
   assert.equal(store.get("mise-theme"), "paper");
-
-  // Empty token classification for the Studio path.
   assert.equal(readShareTokenFromHash("#s="), "");
   assert.notEqual(readShareTokenFromHash("#s="), null);
 

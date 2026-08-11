@@ -14,4 +14,7 @@ test("App wires scene theme persistence, control, exports, and video canvas", ()
   assert.match(app, /\bstandaloneWalkthrough\s*\(\s*scene\s*,\s*theme\s*\)/);
   assert.match(app, /\bstandaloneSvg\s*\([\s\S]*?theme\s*\)/);
   assert.match(app, /getSceneTheme\s*\(\s*theme\s*\)\s*\.\s*bg/);
+  assert.match(app, /\bencodeShareEnvelope\b/);
+  assert.match(app, /Copy share link/);
+  assert.match(app, /Copy embed link/);
 });

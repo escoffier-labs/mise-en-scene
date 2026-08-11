@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Shareable scene links: a validated scene document plus optional theme, gzip-compressed and base64url-encoded in the URL fragment (`#s=`), with Studio hydration that leaves saved local scene and theme untouched.
+- Embeddable single-scene view via `?embed=1`, rendering the shared `SceneSvg` surface without editor chrome or localStorage access.
 - MediaBunny walkthrough encode with `Quality("high")`, VP9 WebM default, AVC MP4 when `canEncodeVideo` allows, MediaRecorder WebM fallback, and format-gated Record WebM/MP4 controls.
 - Deterministic source-derived blocks, relationships, facts, and evidence ranges.
 - Structured OpenAPI JSON extraction for API, tag, and operation elements.

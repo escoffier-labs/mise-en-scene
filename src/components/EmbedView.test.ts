@@ -13,6 +13,14 @@ import {
 const embedSource = readFileSync(fileURLToPath(new URL("./EmbedView.tsx", import.meta.url)), "utf8");
 const mainSource = readFileSync(fileURLToPath(new URL("../main.tsx", import.meta.url)), "utf8");
 
+async function waitFor(predicate: () => boolean, label: string) {
+  const start = Date.now();
+  while (!predicate()) {
+    if (Date.now() - start > 2000) throw new Error(`timed out waiting for ${label}`);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+}
+
 test("EmbedView and main wire ?embed=1 without localStorage or an /embed route", () => {
   assert.match(mainSource, /embed=1|searchParams|URLSearchParams/);
   assert.match(mainSource, /\bEmbedView\b/);
@@ -29,7 +37,7 @@ test("EmbedView share hashchange replaces tokens, ignores stale results, and err
   const applied: string[] = [];
   const errors: string[] = [];
   let resolveSlow: ((value: Awaited<ReturnType<typeof decodeShareEnvelope>>) => void) | undefined;
-  let localStorageTouched = false;
+  const localStorageTouched = false;
 
   const firstDoc = extractScene("A -> B: one", "engineer").document;
   firstDoc.title = "Embed first";
@@ -47,7 +55,6 @@ test("EmbedView share hashchange replaces tokens, ignores stale results, and err
       void decodeShareEnvelope(token).then(resolve);
     });
 
-  // Mirrors EmbedView: hydrate scene chrome-free and never touch localStorage.
   const binding = bindShareHash({
     getHash: () => hash,
     decode,
@@ -67,20 +74,16 @@ test("EmbedView share hashchange replaces tokens, ignores stale results, and err
   binding.refresh();
   hash = `#s=${second}`;
   for (const handler of listeners) handler();
-  await Promise.resolve();
-  await Promise.resolve();
+  await waitFor(() => applied.includes("Embed second"), "embed second title");
   assert.deepEqual(applied, ["Embed second"]);
 
   resolveSlow?.({ ok: true, value: { document: firstDoc, theme: "ledger" } });
-  await Promise.resolve();
-  await Promise.resolve();
+  await new Promise((resolve) => setTimeout(resolve, 0));
   assert.deepEqual(applied, ["Embed second"]);
 
   hash = "#s=";
   for (const handler of listeners) handler();
-  await Promise.resolve();
-  await Promise.resolve();
-  assert.ok(errors.some((error) => /invalid shared scene/i.test(error)));
+  await waitFor(() => errors.some((error) => /invalid shared scene/i.test(error)), "empty share error");
   assert.equal(readShareTokenFromHash("#s="), "");
   assert.equal(localStorageTouched, false);
 
