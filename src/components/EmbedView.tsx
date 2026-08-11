@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { SceneSvg } from "./SceneSvg";
 import { layoutScene } from "../scene/layout";
 import { bindShareHash, type ShareHashState } from "../scene/share";
 import type { SceneThemeId } from "../sceneStyles";
+import { SceneSvg } from "./SceneSvg";
 
 export default function EmbedView() {
   const [state, setState] = useState<ShareHashState>({ status: "loading" });

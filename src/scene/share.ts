@@ -38,7 +38,11 @@ function bytesToBinaryString(bytes: Uint8Array): string {
   // Map every raw byte 1:1. Do not use TextDecoder("latin1"); that applies
   // Windows-1252 and remaps 0x80-0x9f before btoa.
   let out = "";
-  for (let i = 0; i < bytes.length; i++) out += String.fromCharCode(bytes[i]!);
+  for (let i = 0; i < bytes.length; i++) {
+    const byte = bytes[i];
+    if (byte === undefined) continue;
+    out += String.fromCharCode(byte);
+  }
   return out;
 }
 
@@ -59,7 +63,8 @@ function fromBase64Url(token: string): Uint8Array {
 }
 
 async function gzipBytes(bytes: Uint8Array): Promise<Uint8Array> {
-  const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip"));
+  const copy = Uint8Array.from(bytes);
+  const stream = new Blob([copy]).stream().pipeThrough(new CompressionStream("gzip"));
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
@@ -71,7 +76,8 @@ async function gunzipBytesLimited(bytes: Uint8Array, maxBytes: number): Promise<
     throw new Error(INVALID_SHARE);
   }
 
-  const reader = new Blob([bytes]).stream().pipeThrough(decompression).getReader();
+  const copy = Uint8Array.from(bytes);
+  const reader = new Blob([copy]).stream().pipeThrough(decompression).getReader();
   const chunks: Uint8Array[] = [];
   let size = 0;
   try {
