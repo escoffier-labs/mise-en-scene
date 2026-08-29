@@ -12,7 +12,111 @@ export type ExtractionResult = { document: SceneDocument; fallback: boolean };
 
 export function extractScene(source: string, audience: Audience): ExtractionResult {
   const openapi = parseOpenApi(source);
-  return openapi ? extractOpenApi(source, openapi, audience) : extractText(source, audience);
+  if (openapi) return extractOpenApi(source, openapi, audience);
+  const incident = extractIncident(source, audience);
+  if (incident) return incident;
+  return extractText(source, audience);
+}
+
+type IncidentSection = "Timeline" | "Indicators" | "Impact" | "Handoff";
+
+const INCIDENT_SIGNAL = /\b(incident|postmortem|outage|breach|compromise)\b/i;
+const INCIDENT_ORDER: IncidentSection[] = ["Timeline", "Indicators", "Impact", "Handoff"];
+const INCIDENT_KIND: Record<IncidentSection, BlockKind> = {
+  Timeline: "step",
+  Indicators: "source",
+  Impact: "step",
+  Handoff: "step",
+};
+const INCIDENT_ALIASES: Record<IncidentSection, readonly string[]> = {
+  Timeline: ["timeline", "chronology", "sequence of events"],
+  Indicators: ["indicators", "indicators of compromise", "iocs", "evidence", "detection and analysis"],
+  Impact: ["impact", "scope", "affected systems"],
+  Handoff: ["handoff", "next steps", "ownership", "recovery", "post-incident"],
+};
+
+function canonicalizeIncidentHeading(label: string): IncidentSection | null {
+  const key = label.trim().toLowerCase().replace(/\s+/g, " ");
+  for (const section of INCIDENT_ORDER) {
+    if (INCIDENT_ALIASES[section].includes(key)) return section;
+  }
+  return null;
+}
+
+function extractIncident(source: string, audience: Audience): ExtractionResult | null {
+  if (!INCIDENT_SIGNAL.test(source)) return null;
+  const headingRe = /^(#{1,6})\s+(.+?)\s*$/gm;
+  const headings: { section: IncidentSection | null; index: number; fullLength: number }[] = [];
+  for (const match of source.matchAll(headingRe)) {
+    headings.push({
+      section: canonicalizeIncidentHeading(match[2]),
+      index: match.index!,
+      fullLength: match[0].length,
+    });
+  }
+  const seen = new Set<IncidentSection>();
+  const bySection = new Map<IncidentSection, { bodyStart: number; bodyEnd: number }>();
+  for (let i = 0; i < headings.length; i++) {
+    const heading = headings[i];
+    if (!heading.section || seen.has(heading.section)) continue;
+    seen.add(heading.section);
+    bySection.set(heading.section, {
+      bodyStart: heading.index + heading.fullLength,
+      // Stop at the next Markdown heading of any name so unrecognized
+      // sections (e.g. Root cause) cannot leak into a prior canonical body.
+      bodyEnd: i + 1 < headings.length ? headings[i + 1].index : source.length,
+    });
+  }
+  if (bySection.size < 2) return null;
+
+  const document = base(source, audience, "text");
+  document.title = titleFrom(source);
+  document.summary = "Incident report view: timeline, indicators, impact, and handoff grounded in the source.";
+  document.warnings = [];
+  const usedBlocks = new Set<string>();
+  const usedFacts = new Set<string>();
+  const usedEdges = new Set<string>();
+  const present = INCIDENT_ORDER.filter((section) => bySection.has(section));
+
+  for (const section of present) {
+    if (document.blocks.length >= SCENE_LIMITS.blocks) break;
+    const range = bySection.get(section)!;
+    const sceneBlock = block(section, INCIDENT_KIND[section], usedBlocks);
+    const body = source.slice(range.bodyStart, range.bodyEnd);
+    const localFacts: SceneFact[] = [];
+    const itemRe = /^(?:\s*[-*]\s+|\s*\d+\.\s+)(.+?)\s*$/gm;
+    for (const item of body.matchAll(itemRe)) {
+      if (document.facts.length + localFacts.length >= SCENE_LIMITS.facts) break;
+      const text = item[1];
+      const start = range.bodyStart + item.index! + item[0].indexOf(text);
+      localFacts.push({ id: slugId(`fact-${text}`, usedFacts), text, start, end: start + text.length });
+    }
+    if (document.facts.length + localFacts.length < SCENE_LIMITS.facts) {
+      for (const lineMatch of body.matchAll(/^(?!\s*(?:#{1,6}\s|[-*]\s|\d+\.\s|$))(.+?)\s*$/gm)) {
+        const text = lineMatch[1].trim();
+        if (!text) continue;
+        const start = range.bodyStart + lineMatch.index! + lineMatch[0].indexOf(text);
+        localFacts.push({ id: slugId(`fact-${text}`, usedFacts), text, start, end: start + text.length });
+        break;
+      }
+    }
+    for (const fact of localFacts) {
+      document.facts.push(fact);
+      sceneBlock.factIds.push(fact.id);
+    }
+    if (localFacts[0]) sceneBlock.detail = localFacts[0].text;
+    document.blocks.push(sceneBlock);
+  }
+
+  for (let i = 0; i + 1 < document.blocks.length && document.edges.length < SCENE_LIMITS.edges; i++) {
+    const from = document.blocks[i];
+    const to = document.blocks[i + 1];
+    const factIds = to.factIds[0] ? [to.factIds[0]] : [];
+    document.edges.push(edge(from, to, "informs", factIds, usedEdges));
+  }
+
+  document.terms = unique(document.blocks.map((b) => b.label)).slice(0, SCENE_LIMITS.terms);
+  return { document, fallback: false };
 }
 
 function isOpenApi(value: any): value is Record<string, any> {
